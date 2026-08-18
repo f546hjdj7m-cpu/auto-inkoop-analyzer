@@ -3,186 +3,217 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Auto Inkoop Analyzer V1</title>
+<title>Auto Inkoop Analyzer V1.2</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;margin:0;background:#f3f5f7;color:#17202a}
 .wrap{max-width:980px;margin:auto;padding:24px}
 .card{background:#fff;border:1px solid #dde2e6;border-radius:18px;padding:22px;margin:16px 0;box-shadow:0 5px 18px rgba(0,0,0,.05)}
 .grid,.stats,.vehicle-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.stats{grid-template-columns:repeat(4,1fr)}
 .vehicle-grid{grid-template-columns:repeat(2,1fr)}
+.stats{grid-template-columns:repeat(4,1fr)}
 label{display:block;font-weight:700;font-size:13px;margin-bottom:7px}
 input{width:100%;padding:14px;border:1px solid #ccd2d8;border-radius:10px;font-size:16px}
 button{width:100%;padding:15px;margin-top:16px;background:#17202a;color:#fff;border:0;border-radius:10px;font-weight:800;font-size:16px;cursor:pointer}
-button:disabled{opacity:.55;cursor:default}
-.hero{display:flex;justify-content:space-between;align-items:center;gap:20px}
-.score{font-size:54px;font-weight:900;color:#16834b}
-.stat,.vehicle-item{background:#f7f8fa;padding:15px;border-radius:12px}
-.stat b,.vehicle-item b{display:block;font-size:20px;margin-top:6px}
-.muted{color:#6d7782}
-.green{color:#16834b}
-.red{color:#b42318}
-.bar{height:9px;background:#e5e8eb;border-radius:8px;margin-top:6px}
-.fill{height:100%;background:#27313a;border-radius:8px}
+button:disabled{opacity:.55}
+.muted{color:#6d7782}.green{color:#16834b}.red{color:#b42318}.orange{color:#b56600}
 .message{display:none;margin-top:12px;padding:12px;border-radius:10px;background:#fff4e5;border:1px solid #f2c27b}
-.small{font-size:13px}
 .eyebrow{font-size:12px;font-weight:800;letter-spacing:.08em;color:#6d7782;text-transform:uppercase}
 .vehicle-title{font-size:27px;margin:5px 0 4px}
-.demo{margin-top:14px;padding:12px;border-radius:10px;background:#eef3f7;color:#53606c;font-size:13px}
-@media(max-width:700px){.grid,.stats,.vehicle-grid{grid-template-columns:1fr}.hero{display:block}.score{font-size:46px}.wrap{padding:16px}}
+.vehicle-item,.stat,.source{background:#f7f8fa;padding:15px;border-radius:12px}
+.vehicle-item b,.stat b{display:block;font-size:19px;margin-top:6px}
+.source{margin:9px 0;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.pill{font-size:12px;font-weight:800;padding:6px 9px;border-radius:999px;background:#e9eef2}
+.note{padding:12px;border-radius:10px;background:#eef3f7;color:#53606c;font-size:13px;margin-top:14px}
+.score{font-size:52px;font-weight:900}
+@media(max-width:700px){.grid,.stats,.vehicle-grid{grid-template-columns:1fr}.wrap{padding:16px}.source{align-items:flex-start;flex-direction:column}}
 </style>
 </head>
 <body>
 <div class="wrap">
 <h1>Auto Inkoop Analyzer</h1>
-<p class="muted">V1 — snelle inkoopbeoordeling.</p>
+<p class="muted">V1.2 — live RDW + openbare databronnen-test.</p>
 
 <div class="card">
 <h2>Analyseer een auto</h2>
 <form id="analyzeForm">
 <div class="grid">
-<div><label for="plate">Kenteken</label><input id="plate" autocomplete="off" autocapitalize="characters" placeholder="12-AB-34"></div>
-<div><label for="km">Kilometerstand</label><input id="km" inputmode="numeric" type="number" placeholder="85000"></div>
-<div><label for="buy">Inkoopprijs (€)</label><input id="buy" inputmode="numeric" type="number" placeholder="18500"></div>
+<div><label>Kenteken</label><input id="plate" autocomplete="off" autocapitalize="characters" placeholder="12-AB-34"></div>
+<div><label>Kilometerstand</label><input id="km" type="number" inputmode="numeric" placeholder="85000"></div>
+<div><label>Inkoopprijs (€)</label><input id="buy" type="number" inputmode="numeric" placeholder="18500"></div>
 </div>
-<button id="analyzeBtn" type="submit">ANALYSEER AUTO</button>
-<div id="message" class="message"></div>
+<button id="btn" type="submit">ANALYSEER AUTO</button>
+<div id="msg" class="message"></div>
 </form>
 </div>
 
 <div id="vehicleCard" class="card" hidden>
-<div class="eyebrow">RDW voertuiggegevens</div>
-<h2 id="vehicleTitle" class="vehicle-title">—</h2>
-<p id="vehicleSubtitle" class="muted">—</p>
+<div class="eyebrow">Live voertuigdata</div>
+<h2 id="title" class="vehicle-title">—</h2>
+<p id="subtitle" class="muted">—</p>
 <div class="vehicle-grid">
 <div class="vehicle-item">Eerste toelating<b id="firstDate">—</b></div>
+<div class="vehicle-item">Eerste toelating NL<b id="firstNL">—</b></div>
 <div class="vehicle-item">Kleur<b id="color">—</b></div>
 <div class="vehicle-item">Inrichting<b id="body">—</b></div>
-<div class="vehicle-item">Catalogusprijs<b id="catalogPrice">—</b></div>
+<div class="vehicle-item">Catalogusprijs<b id="catalog">—</b></div>
+<div class="vehicle-item">Import-indicatie<b id="imported">—</b></div>
+<div class="vehicle-item">APK tot<b id="apk">—</b></div>
+<div class="vehicle-item">Openstaande recall<b id="recall">—</b></div>
 </div>
 </div>
 
-<div id="result" hidden>
-<div class="card hero">
-<div>
-<p class="muted">Inkoopadvies</p>
-<h2 id="advice" class="green">🟢 INTERESSANTE AUTO</h2>
-<p class="small">Het voertuig komt nu uit RDW. De marktdata hieronder zijn in deze fase nog demo-waarden.</p>
-</div>
-<div><div class="score" id="score">8,7</div><div class="muted">/ 10 deal score</div></div>
+<div id="scoreCard" class="card" hidden>
+<div class="eyebrow">Eerste voertuigscore</div>
+<div class="score" id="vehicleScore">—</div>
+<p id="scoreText"></p>
+<div class="note">Dit is nog geen echte markt-/courantheidsscore. Hij gebruikt voertuigleeftijd, kilometerstand, importstatus, APK en recallstatus. Echte advertentieprijzen en standdagen voegen we later toe.</div>
 </div>
 
-<div class="card">
-<h2>Marktbeeld</h2>
+<div id="sourcesCard" class="card" hidden>
+<h2>Databronnen-test</h2>
+<div class="source"><div><b>RDW Gekentekende voertuigen</b><div class="muted">Merk, model, catalogusprijs, toelating, APK, import-indicatie</div></div><span id="s1" class="pill">Testen…</span></div>
+<div class="source"><div><b>RDW Terugroepactie-status</b><div class="muted">Openstaande of herstelde terugroepacties per kenteken</div></div><span id="s2" class="pill">Testen…</span></div>
+<div class="source"><div><b>RDW vergelijkbare registraties</b><div class="muted">Aantal vergelijkbare registraties met hetzelfde merk/model en vergelijkbaar bouwjaar</div></div><span id="s3" class="pill">Testen…</span></div>
+<div class="note">Er is op dit moment geen publieke bron in deze test die actuele Marktplaats/AutoScout-vraagprijzen levert. Die velden tonen we daarom niet als echte data.</div>
+</div>
+
+<div id="marketCard" class="card" hidden>
+<h2>Open-data marktindicatie</h2>
 <div class="stats">
-<div class="stat">Geschatte marktprijs<b>€ 23.500</b></div>
-<div class="stat">Verwachte verkoop<b>€ 23.750</b></div>
-<div class="stat">Verwachte marge<b id="margin">€ 3.500</b></div>
-<div class="stat">Max. inkoop<b id="maxbuy">€ 20.000</b></div>
+<div class="stat">Vergelijkbare registraties<b id="similar">—</b></div>
+<div class="stat">Gem. catalogusprijs<b id="avgCatalog">—</b></div>
+<div class="stat">Jouw km/jaar<b id="kmYear">—</b></div>
+<div class="stat">Import<b id="importStat">—</b></div>
 </div>
-<div class="demo">Marktprijs, verkoopprijs, standtijd en courantheid zijn nog demo. De RDW-voertuiggegevens hierboven zijn live.</div>
-</div>
-
-<div class="card">
-<h2>Courantheid</h2>
-<p>Modelvraag — 9,1/10</p><div class="bar"><div class="fill" style="width:91%"></div></div>
-<p>Kilometerstand — 8,0/10</p><div class="bar"><div class="fill" style="width:80%"></div></div>
-<p>Prijspositie — 9,0/10</p><div class="bar"><div class="fill" style="width:90%"></div></div>
-<p>Concurrentie — 7,2/10</p><div class="bar"><div class="fill" style="width:72%"></div></div>
-<p>Verkoopsnelheid — 8,3/10</p><div class="bar"><div class="fill" style="width:83%"></div></div>
+<div class="note">Dit is géén actuele occasionmarktprijs. Het helpt ons wel nu al data verzamelen en de latere marktmodule voor te bereiden.</div>
 </div>
 
-<div class="card">
-<h2>Marktvergelijking</h2>
-<p>Vergelijkbare auto's: <b>37</b></p>
-<p>Gemiddelde vraagprijs: <b>€23.650</b></p>
-<p>Prijsrange: <b>€21.950 – €26.500</b></p>
-<p>Geschatte standtijd: <b>28–35 dagen</b></p>
 </div>
-</div>
-</div>
-
 <script>
 (function(){
 'use strict';
-var form=document.getElementById('analyzeForm');
-var msg=document.getElementById('message');
-var result=document.getElementById('result');
-var vehicleCard=document.getElementById('vehicleCard');
-var btn=document.getElementById('analyzeBtn');
-var euro=new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR',maximumFractionDigits:0});
+const form=document.getElementById('analyzeForm');
+const btn=document.getElementById('btn');
+const msg=document.getElementById('msg');
+const euro=new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR',maximumFractionDigits:0});
 
-function showMessage(text){msg.textContent=text;msg.style.display='block';}
-function cleanPlate(value){return value.toUpperCase().replace(/[^A-Z0-9]/g,'');}
-function formatDate(v){
- if(!v || String(v).length!==8)return 'Onbekend';
- v=String(v); return v.slice(6,8)+'-'+v.slice(4,6)+'-'+v.slice(0,4);
+const cleanPlate=v=>v.toUpperCase().replace(/[^A-Z0-9]/g,'');
+const text=v=>(v&&String(v).trim())?String(v):'Onbekend';
+function dateFmt(v){
+  if(!v||String(v).length!==8)return 'Onbekend';
+  v=String(v);return v.slice(6,8)+'-'+v.slice(4,6)+'-'+v.slice(0,4);
 }
-function text(v){return v && String(v).trim() ? v : 'Onbekend';}
+function yearOf(v){return v&&String(v).length>=4?Number(String(v).slice(0,4)):null}
+function showMsg(t){msg.textContent=t;msg.style.display='block'}
+function status(id,ok,label){const e=document.getElementById(id);e.textContent=label;e.style.background=ok?'#e8f5ed':'#fdecec';e.style.color=ok?'#177245':'#a61b1b'}
 
-async function fetchRDW(plate){
- var url='https://opendata.rdw.nl/resource/m9d7-ebf2.json?kenteken='+encodeURIComponent(plate);
- var response=await fetch(url,{headers:{'Accept':'application/json'}});
- if(!response.ok)throw new Error('RDW kon niet worden bereikt.');
- var data=await response.json();
- if(!Array.isArray(data) || !data.length)throw new Error('Kenteken niet gevonden bij RDW. Controleer het kenteken.');
+async function json(url){
+ const r=await fetch(url,{headers:{Accept:'application/json'}});
+ if(!r.ok)throw new Error('HTTP '+r.status);
+ return r.json();
+}
+
+async function vehicle(plate){
+ const data=await json('https://opendata.rdw.nl/resource/m9d7-ebf2.json?kenteken='+encodeURIComponent(plate));
+ if(!data.length)throw new Error('Kenteken niet gevonden bij RDW.');
  return data[0];
 }
 
-function showVehicle(v,plate){
- document.getElementById('vehicleTitle').textContent=text(v.merk)+' '+text(v.handelsbenaming);
- document.getElementById('vehicleSubtitle').textContent=plate+' • '+text(v.voertuigsoort);
- document.getElementById('firstDate').textContent=formatDate(v.datum_eerste_toelating);
- document.getElementById('color').textContent=text(v.eerste_kleur);
- document.getElementById('body').textContent=text(v.inrichting);
- document.getElementById('catalogPrice').textContent=v.catalogusprijs ? euro.format(Number(v.catalogusprijs)) : 'Onbekend';
- vehicleCard.hidden=false;
+async function recalls(plate){
+ return json('https://opendata.rdw.nl/resource/t49b-isb7.json?kenteken='+encodeURIComponent(plate));
 }
 
-form.addEventListener('submit',async function(e){
+async function similars(v){
+ const y=yearOf(v.datum_eerste_toelating);
+ if(!y||!v.merk||!v.handelsbenaming)return [];
+ const from=(y-1)+'0101', to=(y+1)+'1231';
+ const q=`$select=merk,handelsbenaming,datum_eerste_toelating,catalogusprijs&$where=${encodeURIComponent("merk='"+String(v.merk).replace(/'/g,"''")+"' AND handelsbenaming='"+String(v.handelsbenaming).replace(/'/g,"''")+"' AND datum_eerste_toelating between '"+from+"' and '"+to+"'")}&$limit=200`;
+ return json('https://opendata.rdw.nl/resource/m9d7-ebf2.json?'+q);
+}
+
+function vehicleScore(v,km,hasOpenRecall){
+ let s=7.0;
+ const y=yearOf(v.datum_eerste_toelating);
+ const now=new Date().getFullYear();
+ const age=y?Math.max(1,now-y):null;
+ const kmYear=age?km/age:null;
+ const first=Number(v.datum_eerste_toelating||0);
+ const firstNL=Number(v.datum_eerste_tenaamstelling_in_nederland||0);
+ const imported=first&&firstNL&&first!==firstNL;
+ if(kmYear!==null){
+   if(kmYear<12000)s+=1;
+   else if(kmYear<20000)s+=0.5;
+   else if(kmYear>30000)s-=1;
+ }
+ if(imported)s-=0.5;
+ if(hasOpenRecall)s-=0.6;
+ if(v.vervaldatum_apk){
+   const apky=yearOf(v.vervaldatum_apk);
+   if(apky && apky<now)s-=0.7;
+ }
+ return Math.max(1,Math.min(10,s));
+}
+
+form.addEventListener('submit',async e=>{
  e.preventDefault();
- var rawPlate=document.getElementById('plate').value.trim();
- var plate=cleanPlate(rawPlate);
- var km=parseInt(document.getElementById('km').value,10);
- var buy=parseInt(document.getElementById('buy').value,10);
-
- if(!plate || !km || !buy){showMessage('Vul kenteken, kilometerstand en inkoopprijs in.');return;}
-
  msg.style.display='none';
- vehicleCard.hidden=true;
- result.hidden=true;
- btn.disabled=true;
- btn.textContent='RDW-GEGEVENS OPHALEN...';
+ const raw=document.getElementById('plate').value.trim();
+ const plate=cleanPlate(raw);
+ const km=Number(document.getElementById('km').value);
+ const buy=Number(document.getElementById('buy').value);
+ if(!plate||!km||!buy){showMsg('Vul kenteken, kilometerstand en inkoopprijs in.');return}
 
+ btn.disabled=true;btn.textContent='DATA OPHALEN…';
  try{
-   var vehicle=await fetchRDW(plate);
-   showVehicle(vehicle,rawPlate.toUpperCase());
+   const v=await vehicle(plate);
+   status('s1',true,'LIVE');
 
-   var expectedSale=23750, costs=1750, targetProfit=2000;
-   var margin=expectedSale-buy-costs;
-   var maxBuy=expectedSale-costs-targetProfit;
+   let rec=[];
+   try{rec=await recalls(plate);status('s2',true,'LIVE')}catch(e){status('s2',false,'NIET BEREIKBAAR')}
+   const openRecall=rec.some(x=>String(x.code_status||'').toUpperCase()==='O');
 
-   document.getElementById('margin').textContent=euro.format(margin);
-   document.getElementById('maxbuy').textContent=euro.format(maxBuy);
+   let sim=[];
+   try{sim=await similars(v);status('s3',true,'LIVE')}catch(e){status('s3',false,'NIET BEREIKBAAR')}
 
-   if(buy>maxBuy){
-     document.getElementById('advice').textContent='🔴 TE DUUR INGEKOCHT';
-     document.getElementById('advice').className='red';
-     document.getElementById('score').textContent='5,4';
-   } else {
-     document.getElementById('advice').textContent='🟢 INTERESSANTE AUTO';
-     document.getElementById('advice').className='green';
-     document.getElementById('score').textContent='8,7';
-   }
+   document.getElementById('title').textContent=text(v.merk)+' '+text(v.handelsbenaming);
+   document.getElementById('subtitle').textContent=raw.toUpperCase()+' • '+text(v.voertuigsoort);
+   document.getElementById('firstDate').textContent=dateFmt(v.datum_eerste_toelating);
+   document.getElementById('firstNL').textContent=dateFmt(v.datum_eerste_tenaamstelling_in_nederland);
+   document.getElementById('color').textContent=text(v.eerste_kleur);
+   document.getElementById('body').textContent=text(v.inrichting);
+   document.getElementById('catalog').textContent=v.catalogusprijs?euro.format(Number(v.catalogusprijs)):'Onbekend';
+   const imported=Number(v.datum_eerste_toelating||0)!==Number(v.datum_eerste_tenaamstelling_in_nederland||0);
+   document.getElementById('imported').textContent=imported?'Waarschijnlijk import':'Waarschijnlijk NL';
+   document.getElementById('apk').textContent=dateFmt(v.vervaldatum_apk);
+   document.getElementById('recall').textContent=openRecall?'Ja':'Nee';
 
-   result.hidden=false;
-   setTimeout(function(){vehicleCard.scrollIntoView({behavior:'smooth',block:'start'});},50);
+   const catalogs=sim.map(x=>Number(x.catalogusprijs)).filter(x=>x>0);
+   const avg=catalogs.length?catalogs.reduce((a,b)=>a+b,0)/catalogs.length:null;
+   document.getElementById('similar').textContent=String(sim.length);
+   document.getElementById('avgCatalog').textContent=avg?euro.format(avg):'Onbekend';
+
+   const y=yearOf(v.datum_eerste_toelating);
+   const age=y?Math.max(1,new Date().getFullYear()-y):null;
+   const kp=age?Math.round(km/age):null;
+   document.getElementById('kmYear').textContent=kp?kp.toLocaleString('nl-NL')+' km':'Onbekend';
+   document.getElementById('importStat').textContent=imported?'Ja':'Nee';
+
+   const sc=vehicleScore(v,km,openRecall);
+   document.getElementById('vehicleScore').textContent=sc.toFixed(1).replace('.',',')+' / 10';
+   document.getElementById('vehicleScore').className='score '+(sc>=7.5?'green':sc>=6?'orange':'red');
+   document.getElementById('scoreText').textContent=sc>=7.5?'Goede basis op voertuigkenmerken.':sc>=6?'Gemiddelde basis; marktdata wordt belangrijk.':'Meer risico op basis van voertuigkenmerken.';
+
+   document.getElementById('vehicleCard').hidden=false;
+   document.getElementById('scoreCard').hidden=false;
+   document.getElementById('sourcesCard').hidden=false;
+   document.getElementById('marketCard').hidden=false;
+   document.getElementById('vehicleCard').scrollIntoView({behavior:'smooth',block:'start'});
  }catch(err){
-   showMessage(err.message || 'Er ging iets mis bij het ophalen van RDW-data.');
+   status('s1',false,'FOUT');
+   showMsg(err.message||'Er ging iets mis.');
  }finally{
-   btn.disabled=false;
-   btn.textContent='ANALYSEER AUTO';
+   btn.disabled=false;btn.textContent='ANALYSEER AUTO';
  }
 });
 })();
