@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Auto Inkoop Analyzer V1</title>
+<style>
+*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;margin:0;background:#f3f5f7;color:#17202a}.wrap{max-width:1050px;margin:auto;padding:24px}.card{background:#fff;border:1px solid #dde2e6;border-radius:18px;padding:22px;margin:16px 0;box-shadow:0 5px 18px rgba(0,0,0,.05)}.grid,.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.stats{grid-template-columns:repeat(4,1fr)}label{display:block;font-weight:700;font-size:13px;margin-bottom:7px}input{width:100%;padding:14px;border:1px solid #ccd2d8;border-radius:10px;font-size:16px}button{width:100%;padding:15px;margin-top:16px;background:#17202a;color:#fff;border:0;border-radius:10px;font-weight:800;font-size:16px;cursor:pointer}.hero{display:flex;justify-content:space-between;align-items:center;gap:20px}.score{font-size:54px;font-weight:900;color:#16834b}.stat{background:#f7f8fa;padding:15px;border-radius:12px}.stat b{display:block;font-size:20px;margin-top:6px}.muted{color:#6d7782}.green{color:#16834b}.red{color:#b42318}.bar{height:9px;background:#e5e8eb;border-radius:8px;margin-top:6px}.fill{height:100%;background:#27313a;border-radius:8px}.message{display:none;margin-top:12px;padding:12px;border-radius:10px;background:#fff4e5;border:1px solid #f2c27b}.small{font-size:13px}.fallback{margin-top:14px;padding:12px;border-radius:10px;background:#eef3f7;color:#53606c;font-size:13px}@media(max-width:700px){.grid,.stats{grid-template-columns:1fr}.hero{display:block}.score{font-size:46px}.wrap{padding:16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Auto Inkoop Analyzer</h1>
+<p class="muted">V1 demo — voor snelle inkoopbeoordeling.</p>
+<div class="card">
+<h2>Analyseer een auto</h2>
+<form id="analyzeForm">
+<div class="grid">
+<div><label for="plate">Kenteken</label><input id="plate" autocomplete="off" placeholder="12-AB-34"></div>
+<div><label for="km">Kilometerstand</label><input id="km" inputmode="numeric" type="number" placeholder="85000"></div>
+<div><label for="buy">Inkoopprijs (€)</label><input id="buy" inputmode="numeric" type="number" placeholder="18500"></div>
+</div>
+<button id="analyzeBtn" type="submit">ANALYSEER AUTO</button>
+<div id="message" class="message"></div>
+</form>
+<div class="fallback">Zie je na klikken niets gebeuren in de ChatGPT-bestandsweergave? Open dit HTML-bestand dan rechtstreeks in Safari/Chrome; sommige ingebouwde previews blokkeren JavaScript.</div>
+</div>
+<div id="result" hidden>
+<div class="card hero"><div><p class="muted">Inkoopadvies</p><h2 id="advice" class="green">🟢 INTERESSANTE AUTO</h2><p class="small">Demo-resultaat. De echte RDW- en marktdata worden in de volgende stap gekoppeld.</p></div><div><div class="score" id="score">8,7</div><div class="muted">/ 10 deal score</div></div></div>
+<div class="card"><h2>Marktbeeld</h2><div class="stats"><div class="stat">Geschatte marktprijs<b>€ 23.500</b></div><div class="stat">Verwachte verkoop<b>€ 23.750</b></div><div class="stat">Verwachte marge<b id="margin">€ 3.500</b></div><div class="stat">Max. inkoop<b id="maxbuy">€ 20.000</b></div></div></div>
+<div class="card"><h2>Courantheid</h2><p>Modelvraag — 9,1/10</p><div class="bar"><div class="fill" style="width:91%"></div></div><p>Kilometerstand — 8,0/10</p><div class="bar"><div class="fill" style="width:80%"></div></div><p>Prijspositie — 9,0/10</p><div class="bar"><div class="fill" style="width:90%"></div></div><p>Concurrentie — 7,2/10</p><div class="bar"><div class="fill" style="width:72%"></div></div><p>Verkoopsnelheid — 8,3/10</p><div class="bar"><div class="fill" style="width:83%"></div></div></div>
+<div class="card"><h2>Marktvergelijking</h2><p>Vergelijkbare auto's: <b>37</b></p><p>Gemiddelde vraagprijs: <b>€23.650</b></p><p>Prijsrange: <b>€21.950 – €26.500</b></p><p>Geschatte standtijd: <b>28–35 dagen</b></p></div>
+</div>
+</div>
+<script>
+(function(){
+  'use strict';
+  var form=document.getElementById('analyzeForm');
+  var msg=document.getElementById('message');
+  var result=document.getElementById('result');
+  var euro=new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR',maximumFractionDigits:0});
+  function showMessage(text){msg.textContent=text;msg.style.display='block';}
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    var plate=document.getElementById('plate').value.trim();
+    var km=parseInt(document.getElementById('km').value,10);
+    var buy=parseInt(document.getElementById('buy').value,10);
+    if(!plate || !km || !buy){showMessage('Vul kenteken, kilometerstand en inkoopprijs in.');return;}
+    msg.style.display='none';
+    var expectedSale=23750;
+    var costs=1750;
+    var targetProfit=2000;
+    var margin=expectedSale-buy-costs;
+    var maxBuy=expectedSale-costs-targetProfit;
+    document.getElementById('margin').textContent=euro.format(margin);
+    document.getElementById('maxbuy').textContent=euro.format(maxBuy);
+    if(buy>maxBuy){document.getElementById('advice').textContent='🔴 TE DUUR INGEKOCHT';document.getElementById('advice').className='red';document.getElementById('score').textContent='5,4';}
+    else{document.getElementById('advice').textContent='🟢 INTERESSANTE AUTO';document.getElementById('advice').className='green';document.getElementById('score').textContent='8,7';}
+    result.hidden=false;
+    setTimeout(function(){result.scrollIntoView({behavior:'smooth',block:'start'});},50);
+  });
+})();
+</script>
+</body></html>
