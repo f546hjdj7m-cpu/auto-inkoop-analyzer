@@ -3,487 +3,785 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Auto Inkoop Analyzer V1.3</title>
+<title>Auto Inkoop Analyzer V1.5</title>
 <style>
+:root{
+  --copper:#b87333;
+  --copper-dark:#8f5528;
+  --copper-soft:#f7eee7;
+  --ink:#231f1b;
+  --muted:#786f68;
+  --line:#ead8c8;
+  --bg:#ffffff;
+  --panel:#fcf8f4;
+}
 *{box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;margin:0;background:#f3f5f7;color:#17202a}
-.wrap{max-width:980px;margin:auto;padding:24px}
-.card{background:#fff;border:1px solid #dde2e6;border-radius:18px;padding:22px;margin:16px 0;box-shadow:0 5px 18px rgba(0,0,0,.05)}
-.tabs{display:grid;grid-template-columns:1fr 1fr;background:#eef1f4;border-radius:12px;padding:4px;margin:14px 0 20px}
-.tab{border:0;background:transparent;color:#53606c;padding:11px;border-radius:9px;font-weight:800;margin:0}
-.tab.active{background:#17202a;color:#fff}
-.grid,.vehicle-grid,.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+}
+.wrap{max-width:980px;margin:auto;padding:22px}
+.card{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:22px;
+  margin:16px 0;
+  box-shadow:0 7px 24px rgba(120,72,35,.08);
+}
+h1{margin-bottom:6px}
+h2{margin-top:0}
+.muted{color:var(--muted)}
+.eyebrow{
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--copper-dark);
+}
+.tabs{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:4px;
+  background:#f8f1eb;
+  padding:4px;
+  border-radius:12px;
+  margin:14px 0 18px;
+}
+.tab{
+  border:0;
+  border-radius:9px;
+  padding:12px;
+  background:transparent;
+  color:#765f4d;
+  font-weight:800;
+  cursor:pointer;
+}
+.tab.active{background:var(--copper);color:#fff}
+.grid,.vehicle-grid,.stats{display:grid;gap:14px}
+.grid{grid-template-columns:repeat(3,1fr)}
 .vehicle-grid{grid-template-columns:repeat(2,1fr)}
 .stats{grid-template-columns:repeat(4,1fr)}
-label{display:block;font-weight:700;font-size:13px;margin-bottom:7px}
-input{width:100%;padding:14px;border:1px solid #ccd2d8;border-radius:10px;font-size:16px}
-button.submit{width:100%;padding:15px;margin-top:16px;background:#17202a;color:#fff;border:0;border-radius:10px;font-weight:800;font-size:16px;cursor:pointer}
-button:disabled{opacity:.55}
-.muted{color:#6d7782}.green{color:#16834b}.red{color:#b42318}.orange{color:#b56600}
-.message{display:none;margin-top:12px;padding:12px;border-radius:10px;background:#fff4e5;border:1px solid #f2c27b}
-.eyebrow{font-size:12px;font-weight:800;letter-spacing:.08em;color:#6d7782;text-transform:uppercase}
-.vehicle-title{font-size:27px;margin:5px 0 4px}
-.vehicle-item,.stat,.source{background:#f7f8fa;padding:15px;border-radius:12px}
+label{display:block;font-size:13px;font-weight:800;margin-bottom:7px}
+input{
+  width:100%;
+  padding:14px;
+  border:1px solid #d9b99d;
+  border-radius:10px;
+  font-size:16px;
+  background:#fff;
+  color:var(--ink);
+}
+input:focus{outline:2px solid #efd9c7;border-color:var(--copper)}
+.submit{
+  width:100%;
+  margin-top:16px;
+  padding:15px;
+  border:0;
+  border-radius:10px;
+  background:var(--copper);
+  color:#fff;
+  font-weight:900;
+  font-size:16px;
+  cursor:pointer;
+}
+.submit:disabled{opacity:.55}
+.message{
+  display:none;
+  margin-top:12px;
+  padding:12px;
+  border:1px solid #d7a77e;
+  background:#fff7ef;
+  border-radius:10px;
+}
+.vehicle-item,.stat,.source{
+  background:var(--panel);
+  border-radius:12px;
+  padding:15px;
+}
 .vehicle-item b,.stat b{display:block;font-size:19px;margin-top:6px}
-.source{margin:9px 0;display:flex;justify-content:space-between;gap:10px;align-items:center}
-.pill{font-size:12px;font-weight:800;padding:6px 9px;border-radius:999px;background:#e9eef2}
-.note{padding:12px;border-radius:10px;background:#eef3f7;color:#53606c;font-size:13px;margin-top:14px}
-.score{font-size:52px;font-weight:900}
+.vehicle-title{font-size:28px;margin:5px 0}
+.note{
+  margin-top:14px;
+  padding:12px;
+  background:var(--copper-soft);
+  color:#6d5643;
+  border-radius:10px;
+  font-size:13px;
+}
+.score{font-size:52px;font-weight:900;color:var(--copper-dark)}
+.green{color:#177245}
+.orange{color:#a4662f}
+.red{color:#9b3f32}
+.source{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:center;
+  margin:9px 0;
+}
+.pill{
+  font-size:12px;
+  font-weight:900;
+  padding:6px 9px;
+  border-radius:999px;
+  background:#f2e4d7;
+  color:var(--copper-dark);
+}
 .hidden{display:none!important}
-@media(max-width:700px){.grid,.stats,.vehicle-grid{grid-template-columns:1fr}.wrap{padding:16px}.source{align-items:flex-start;flex-direction:column}}
+.parts-search{display:flex;gap:10px;margin-top:12px}
+.parts-search input{flex:1}
+.parts-search button{
+  width:auto;
+  border:0;
+  padding:14px 18px;
+  border-radius:10px;
+  background:var(--copper);
+  color:#fff;
+  font-weight:900;
+}
+.parts-results{display:grid;gap:10px;margin-top:14px}
+.part-link{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding:14px 15px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--panel);
+  text-decoration:none;
+  color:var(--ink);
+  font-weight:800;
+}
+.part-link small{display:block;font-weight:500;color:var(--muted);margin-top:3px}
+.part-link span:last-child{color:var(--copper-dark);font-weight:900}
+@media(max-width:700px){
+  .grid,.vehicle-grid,.stats{grid-template-columns:1fr}
+  .wrap{padding:15px}
+  .parts-search{flex-direction:column}
+  .parts-search button{width:100%}
+  .source{align-items:flex-start;flex-direction:column}
+}
 </style>
-
-<style>
-:root{--copper:#b87333;--copper-dark:#8f5528;--copper-soft:#f5ebe2;--ink:#231f1b;--muted:#786f68}
-body{background:#fff;color:var(--ink)}
-.card{background:#fff;border:1px solid #ead8c8;box-shadow:0 6px 20px rgba(120,72,35,.08)}
-h1,h2{color:var(--ink)}
-.muted{color:var(--muted)}
-.tabs{background:#f8f1eb}
-.tab{color:#7b6655}
-.tab.active{background:var(--copper);color:#fff}
-input{background:#fff;border:1px solid #d9b99d;color:var(--ink)}
-input:focus{outline:2px solid #e4c4a8;border-color:var(--copper)}
-button.submit{background:var(--copper);color:#fff}
-button.submit:active{background:var(--copper-dark)}
-.vehicle-item,.stat,.source{background:#fcf8f4}
-.eyebrow{color:var(--copper-dark)}
-.note{background:var(--copper-soft);color:#6d5643}
-.pill{background:#f2e4d7;color:var(--copper-dark)}
-.score.green,.green{color:var(--copper-dark)}
-.score.orange,.orange{color:#a4662f}
-.score.red,.red{color:#9b3f32}
-.message{background:#fff7ef;border-color:#d7a77e}
-</style>
-
 </head>
 <body>
 <div class="wrap">
-<h1>Auto Inkoop Analyzer</h1>
-<p class="muted">V1.3 — Nederlands kenteken óf buitenlands chassisnummer.</p>
+  <h1>Auto Inkoop Analyzer</h1>
+  <p class="muted">V1.5 — schoon opgebouwd met kenteken, VIN en onderdelenzoeker.</p>
 
-<div class="card">
-<h2>Analyseer een auto</h2>
+  <div class="card">
+    <h2>Analyseer een auto</h2>
 
-<div class="tabs">
-<button type="button" id="plateTab" class="tab active">Nederlands kenteken</button>
-<button type="button" id="vinTab" class="tab">Chassisnummer / VIN</button>
+    <div class="tabs">
+      <button id="plateTab" class="tab active" type="button">Nederlands kenteken</button>
+      <button id="vinTab" class="tab" type="button">Chassisnummer / VIN</button>
+    </div>
+
+    <form id="analyzeForm">
+      <div id="plateBlock">
+        <label for="plate">Kenteken</label>
+        <input id="plate" autocomplete="off" autocapitalize="characters" placeholder="12-AB-34">
+      </div>
+
+      <div id="vinBlock" class="hidden">
+        <label for="vin">Chassisnummer / VIN</label>
+        <input id="vin" maxlength="17" autocomplete="off" autocapitalize="characters" placeholder="17 tekens, bijv. WBA...">
+        <div class="note">Voor bijvoorbeeld een Duitse auto. We proberen merk, model, bouwjaar, carrosserie, brandstof en motor uit het VIN te halen.</div>
+      </div>
+
+      <div class="grid" style="margin-top:14px">
+        <div>
+          <label for="km">Kilometerstand</label>
+          <input id="km" type="number" inputmode="numeric" placeholder="85000">
+        </div>
+        <div>
+          <label for="buy">Inkoopprijs (€)</label>
+          <input id="buy" type="number" inputmode="numeric" placeholder="18500">
+        </div>
+        <div id="modelYearWrap" class="hidden">
+          <label for="modelYear">Modeljaar (optioneel)</label>
+          <input id="modelYear" type="number" inputmode="numeric" placeholder="2021">
+        </div>
+      </div>
+
+      <button id="analyzeBtn" class="submit" type="submit">ANALYSEER AUTO</button>
+      <div id="message" class="message"></div>
+    </form>
+  </div>
+
+  <div id="vehicleCard" class="card" hidden>
+    <div id="vehicleSource" class="eyebrow">Voertuiggegevens</div>
+    <h2 id="vehicleTitle" class="vehicle-title">—</h2>
+    <p id="vehicleSubtitle" class="muted">—</p>
+    <div class="vehicle-grid">
+      <div class="vehicle-item">Modeljaar / eerste toelating<b id="vehicleYear">—</b></div>
+      <div class="vehicle-item">Carrosserie<b id="vehicleBody">—</b></div>
+      <div class="vehicle-item">Brandstof<b id="vehicleFuel">—</b></div>
+      <div class="vehicle-item">Motor<b id="vehicleEngine">—</b></div>
+      <div class="vehicle-item">Aandrijving<b id="vehicleDrive">—</b></div>
+      <div class="vehicle-item">Uitvoering / serie<b id="vehicleTrim">—</b></div>
+    </div>
+  </div>
+
+  <div id="compareCard" class="card" hidden>
+    <div class="eyebrow">Vergelijking Nederland</div>
+    <h2>Vergelijkbare Nederlandse registraties</h2>
+    <div class="stats">
+      <div class="stat">Gevonden<b id="similarCount">—</b></div>
+      <div class="stat">Gem. catalogusprijs<b id="avgCatalog">—</b></div>
+      <div class="stat">Zoekmodel<b id="searchModel">—</b></div>
+      <div class="stat">Matchkwaliteit<b id="matchQuality">—</b></div>
+    </div>
+    <div class="note">Dit zijn Nederlandse RDW-registraties, nog geen actuele advertenties. Zodra we marktdata koppelen, gebruiken we dezelfde matching voor echte vraagprijzen en standdagen.</div>
+  </div>
+
+  <div id="scoreCard" class="card" hidden>
+    <div class="eyebrow">Voorlopige matchscore</div>
+    <div id="matchScore" class="score">—</div>
+    <p id="scoreText"></p>
+  </div>
+
+  <div id="partsCard" class="card" hidden>
+    <div class="eyebrow">Onderdelen zoeken</div>
+    <h2>Zoek onderdelen voor deze auto</h2>
+    <p class="muted">Typ bijvoorbeeld koplamp, bumper, velg, spiegel, turbo of versnellingsbak.</p>
+    <div class="parts-search">
+      <input id="partQuery" type="search" placeholder="Bijv. koplamp">
+      <button id="partSearchBtn" type="button">ZOEK</button>
+    </div>
+    <div id="partsResults" class="parts-results"></div>
+  </div>
+
+  <div id="sourcesCard" class="card" hidden>
+    <h2>Databronnen</h2>
+    <div class="source">
+      <div>
+        <b id="source1Name">Voertuigidentificatie</b>
+        <div id="source1Desc" class="muted">—</div>
+      </div>
+      <span id="source1Status" class="pill">—</span>
+    </div>
+    <div class="source">
+      <div>
+        <b>RDW Nederlandse vergelijking</b>
+        <div class="muted">Merk, model, bouwjaar en technische kenmerken</div>
+      </div>
+      <span id="source2Status" class="pill">—</span>
+    </div>
+  </div>
 </div>
 
-<form id="analyzeForm">
-<div id="plateField">
-<label for="plate">Kenteken</label>
-<input id="plate" autocomplete="off" autocapitalize="characters" placeholder="12-AB-34">
-</div>
-
-<div id="vinField" class="hidden">
-<label for="vin">Chassisnummer / VIN</label>
-<input id="vin" autocomplete="off" autocapitalize="characters" maxlength="17" placeholder="17 tekens, bijv. WBA...">
-<div class="note">Geschikt om bijvoorbeeld een Duitse auto eerst te identificeren en daarna met Nederlandse registraties te vergelijken.</div>
-</div>
-
-<div class="grid" style="margin-top:14px">
-<div><label>Kilometerstand</label><input id="km" type="number" inputmode="numeric" placeholder="85000"></div>
-<div><label>Inkoopprijs (€)</label><input id="buy" type="number" inputmode="numeric" placeholder="18500"></div>
-<div><label>Modeljaar (optioneel bij VIN)</label><input id="modelYear" type="number" inputmode="numeric" placeholder="2021"></div>
-</div>
-
-<button id="btn" class="submit" type="submit">ANALYSEER AUTO</button>
-<div id="msg" class="message"></div>
-</form>
-</div>
-
-<div id="vehicleCard" class="card" hidden>
-<div class="eyebrow" id="vehicleSource">Voertuiggegevens</div>
-<h2 id="title" class="vehicle-title">—</h2>
-<p id="subtitle" class="muted">—</p>
-<div class="vehicle-grid">
-<div class="vehicle-item">Modeljaar / eerste toelating<b id="year">—</b></div>
-<div class="vehicle-item">Carrosserie<b id="body">—</b></div>
-<div class="vehicle-item">Brandstof<b id="fuel">—</b></div>
-<div class="vehicle-item">Motor<b id="engine">—</b></div>
-<div class="vehicle-item">Aandrijving<b id="drive">—</b></div>
-<div class="vehicle-item">Uitvoering / serie<b id="trim">—</b></div>
-</div>
-</div>
-
-<div id="compareCard" class="card" hidden>
-<div class="eyebrow">Vergelijking Nederland</div>
-<h2>Vergelijkbare Nederlandse auto's</h2>
-<div class="stats">
-<div class="stat">Gevonden registraties<b id="similar">—</b></div>
-<div class="stat">Gem. catalogusprijs<b id="avgCatalog">—</b></div>
-<div class="stat">Zoekmodel<b id="searchModel">—</b></div>
-<div class="stat">Matchkwaliteit<b id="matchQuality">—</b></div>
-</div>
-<div class="note">Dit vergelijkt nu met Nederlandse RDW-registraties van hetzelfde merk/model en ongeveer hetzelfde bouwjaar. Dit zijn nog géén actuele advertenties of vraagprijzen.</div>
-</div>
-
-<div id="scoreCard" class="card" hidden>
-<div class="eyebrow">Voorlopige matchscore</div>
-<div class="score" id="vehicleScore">—</div>
-<p id="scoreText"></p>
-<div class="note">Deze score beoordeelt nu hoe goed we de buitenlandse auto kunnen koppelen aan Nederlandse registraties en hoe normaal de kilometerstand is voor de leeftijd. Echte marktprijs en standdagen volgen zodra we een occasiondatabron koppelen.</div>
-</div>
-
-
-<div id="partsCard" class="card" hidden>
-<div class="eyebrow">Onderdelen zoeken</div>
-<h2>Zoek onderdelen voor deze auto</h2>
-<p class="muted">Typ bijvoorbeeld: koplamp, bumper, velg, spiegel, turbo of versnellingsbak.</p>
-<div class="parts-search">
-<input id="partQuery" type="search" placeholder="Bijv. koplamp">
-<button id="partSearchBtn" type="button">ZOEK</button>
-</div>
-<div id="partsHint" class="note">De zoekopdracht gebruikt automatisch merk, model en bouwjaar van de auto die je zojuist hebt geanalyseerd.</div>
-<div id="partsResults" class="parts-results"></div>
-</div>
-
-<div id="sourcesCard" class="card" hidden>
-<h2>Databronnen</h2>
-<div class="source"><div><b id="source1name">Voertuigidentificatie</b><div class="muted" id="source1desc">—</div></div><span id="s1" class="pill">—</span></div>
-<div class="source"><div><b>RDW Nederlandse vergelijking</b><div class="muted">Zelfde merk/model en bouwjaarband in Nederland</div></div><span id="s2" class="pill">—</span></div>
-</div>
-
-</div>
 <script>
 (function(){
 'use strict';
 
-let mode='plate';
-const plateTab=document.getElementById('plateTab');
-const vinTab=document.getElementById('vinTab');
-const plateField=document.getElementById('plateField');
-const vinField=document.getElementById('vinField');
-const form=document.getElementById('analyzeForm');
-const btn=document.getElementById('btn');
-const msg=document.getElementById('msg');
-const euro=new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR',maximumFractionDigits:0});
+const $ = id => document.getElementById(id);
+const euro = new Intl.NumberFormat('nl-NL',{
+  style:'currency',
+  currency:'EUR',
+  maximumFractionDigits:0
+});
 
-function selectMode(m){
- mode=m;
- const isPlate=m==='plate';
- plateTab.classList.toggle('active',isPlate);
- vinTab.classList.toggle('active',!isPlate);
- plateField.classList.toggle('hidden',!isPlate);
- vinField.classList.toggle('hidden',isPlate);
- document.getElementById('modelYear').parentElement.classList.toggle('hidden',isPlate);
- msg.style.display='none';
-}
-plateTab.addEventListener('click',()=>selectMode('plate'));
-vinTab.addEventListener('click',()=>selectMode('vin'));
-selectMode('plate');
+let mode = 'plate';
+let currentVehicle = null;
 
-const cleanPlate=v=>v.toUpperCase().replace(/[^A-Z0-9]/g,'');
-const cleanVin=v=>v.toUpperCase().replace(/[^A-Z0-9]/g,'');
-const txt=v=>(v&&String(v).trim())?String(v):'Onbekend';
-function showMsg(t){msg.textContent=t;msg.style.display='block'}
-function status(id,ok,label){
- const e=document.getElementById(id);
- e.textContent=label;
- e.style.background=ok?'#e8f5ed':'#fdecec';
- e.style.color=ok?'#177245':'#a61b1b';
+function setMode(nextMode){
+  mode = nextMode;
+  const plateMode = mode === 'plate';
+
+  $('plateTab').classList.toggle('active', plateMode);
+  $('vinTab').classList.toggle('active', !plateMode);
+  $('plateBlock').classList.toggle('hidden', !plateMode);
+  $('vinBlock').classList.toggle('hidden', plateMode);
+  $('modelYearWrap').classList.toggle('hidden', plateMode);
+  hideMessage();
 }
-function yearFromRDW(v){
- if(!v||String(v).length<4)return null;
- return Number(String(v).slice(0,4));
+
+$('plateTab').addEventListener('click', function(){ setMode('plate'); });
+$('vinTab').addEventListener('click', function(){ setMode('vin'); });
+
+function showMessage(text){
+  $('message').textContent = text;
+  $('message').style.display = 'block';
 }
-function formatRDWDate(v){
- if(!v||String(v).length!==8)return 'Onbekend';
- v=String(v);return v.slice(6,8)+'-'+v.slice(4,6)+'-'+v.slice(0,4);
+function hideMessage(){
+  $('message').style.display = 'none';
 }
+function cleanPlate(value){
+  return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g,'');
+}
+function cleanVin(value){
+  return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g,'');
+}
+function safeText(value){
+  return value && String(value).trim() ? String(value) : 'Onbekend';
+}
+function rdwYear(value){
+  if(!value || String(value).length < 4) return null;
+  return Number(String(value).slice(0,4));
+}
+function rdwDate(value){
+  if(!value || String(value).length !== 8) return 'Onbekend';
+  value = String(value);
+  return value.slice(6,8)+'-'+value.slice(4,6)+'-'+value.slice(0,4);
+}
+function normalize(value){
+  return String(value || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9 ]/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+function setStatus(id, ok, label){
+  const el = $(id);
+  el.textContent = label;
+  el.style.background = ok ? '#e8f5ed' : '#fdecec';
+  el.style.color = ok ? '#177245' : '#a61b1b';
+}
+
 async function getJSON(url){
- const r=await fetch(url,{headers:{Accept:'application/json'}});
- if(!r.ok)throw new Error('Databron gaf fout '+r.status);
- return r.json();
+  const response = await fetch(url, {headers:{Accept:'application/json'}});
+  if(!response.ok){
+    throw new Error('Databron gaf fout '+response.status);
+  }
+  return response.json();
 }
 
-async function fetchRDWVehicle(plate){
- const rows=await getJSON('https://opendata.rdw.nl/resource/m9d7-ebf2.json?kenteken='+encodeURIComponent(plate));
- if(!rows.length)throw new Error('Kenteken niet gevonden bij RDW.');
- const v=rows[0];
- return {
-   make:txt(v.merk),
-   model:txt(v.handelsbenaming),
-   year:yearFromRDW(v.datum_eerste_toelating),
-   yearText:formatRDWDate(v.datum_eerste_toelating),
-   body:txt(v.inrichting),
-   fuel:'Zie RDW registratie',
-   engine:v.cilinderinhoud?Number(v.cilinderinhoud).toLocaleString('nl-NL')+' cc':'Onbekend',
-   drive:'Onbekend',
-   trim:txt(v.handelsbenaming),
-   catalog:Number(v.catalogusprijs||0),
-   raw:v
- };
+async function loadRDWVehicle(plate){
+  const url = 'https://opendata.rdw.nl/resource/m9d7-ebf2.json?kenteken='+encodeURIComponent(plate);
+  const rows = await getJSON(url);
+
+  if(!Array.isArray(rows) || rows.length === 0){
+    throw new Error('Kenteken niet gevonden bij RDW.');
+  }
+
+  const v = rows[0];
+
+  return {
+    source:'RDW',
+    make:safeText(v.merk),
+    model:safeText(v.handelsbenaming),
+    year:rdwYear(v.datum_eerste_toelating),
+    yearText:rdwDate(v.datum_eerste_toelating),
+    body:safeText(v.inrichting),
+    fuel:'Zie RDW registratie',
+    engine:v.cilinderinhoud ? Number(v.cilinderinhoud).toLocaleString('nl-NL')+' cc' : 'Onbekend',
+    drive:'Onbekend',
+    trim:safeText(v.handelsbenaming),
+    raw:v
+  };
 }
 
-async function fetchVINVehicle(vin,modelYear){
- let url='https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValuesExtended/'+encodeURIComponent(vin)+'?format=json';
- if(modelYear)url+='&modelyear='+encodeURIComponent(modelYear);
- const data=await getJSON(url);
- if(!data.Results||!data.Results.length)throw new Error('VIN kon niet worden gedecodeerd.');
- const v=data.Results[0];
- if(!v.Make && !v.Model)throw new Error('VIN herkend, maar merk/model konden niet betrouwbaar worden bepaald.');
- return {
-   make:txt(v.Make),
-   model:txt(v.Model),
-   year:Number(v.ModelYear||modelYear||0)||null,
-   yearText:txt(v.ModelYear||modelYear),
-   body:txt(v.BodyClass),
-   fuel:txt(v.FuelTypePrimary),
-   engine:v.DisplacementL?txt(v.DisplacementL)+' L':txt(v.EngineModel),
-   drive:txt(v.DriveType),
-   trim:[v.Series,v.Trim].filter(Boolean).join(' • ')||'Onbekend',
-   catalog:0,
-   raw:v
- };
+async function loadVINVehicle(vin, modelYear){
+  let url = 'https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValuesExtended/'+encodeURIComponent(vin)+'?format=json';
+  if(modelYear){
+    url += '&modelyear='+encodeURIComponent(modelYear);
+  }
+
+  const data = await getJSON(url);
+
+  if(!data || !Array.isArray(data.Results) || data.Results.length === 0){
+    throw new Error('VIN kon niet worden gedecodeerd.');
+  }
+
+  const v = data.Results[0];
+
+  if(!v.Make && !v.Model){
+    throw new Error('VIN is geldig, maar merk/model konden niet betrouwbaar worden bepaald.');
+  }
+
+  return {
+    source:'VIN',
+    make:safeText(v.Make),
+    model:safeText(v.Model),
+    year:Number(v.ModelYear || modelYear || 0) || null,
+    yearText:safeText(v.ModelYear || modelYear),
+    body:safeText(v.BodyClass),
+    fuel:safeText(v.FuelTypePrimary),
+    engine:v.DisplacementL ? safeText(v.DisplacementL)+' L' : safeText(v.EngineModel),
+    drive:safeText(v.DriveType),
+    trim:[v.Series,v.Trim].filter(Boolean).join(' • ') || 'Onbekend',
+    raw:v
+  };
 }
 
-function normalize(s){
- return String(s||'').toUpperCase()
-  .replace(/[^A-Z0-9 ]/g,' ')
-  .replace(/\s+/g,' ')
-  .trim();
+function manufacturerVariants(make){
+  const key = normalize(make);
+  const map = {
+    'MERCEDES BENZ':['MERCEDES-BENZ','MERCEDES BENZ'],
+    'MERCEDES-BENZ':['MERCEDES-BENZ','MERCEDES BENZ'],
+    'BMW':['BMW'],
+    'AUDI':['AUDI'],
+    'VOLKSWAGEN':['VOLKSWAGEN'],
+    'PORSCHE':['PORSCHE'],
+    'VOLVO':['VOLVO'],
+    'MINI':['MINI'],
+    'SKODA':['SKODA'],
+    'SEAT':['SEAT'],
+    'CUPRA':['CUPRA'],
+    'LAND ROVER':['LAND ROVER']
+  };
+  return map[key] || [make];
 }
-function makeVariants(make){
- const m=normalize(make);
- const map={
-  'MERCEDES BENZ':['MERCEDES-BENZ','MERCEDES BENZ'],
-  'MERCEDES-BENZ':['MERCEDES-BENZ','MERCEDES BENZ'],
-  'VOLKSWAGEN':['VOLKSWAGEN'],
-  'BMW':['BMW'],
-  'AUDI':['AUDI'],
-  'PORSCHE':['PORSCHE'],
-  'VOLVO':['VOLVO'],
-  'SKODA':['SKODA'],
-  'SEAT':['SEAT'],
-  'CUPRA':['CUPRA'],
-  'MINI':['MINI'],
-  'LAND ROVER':['LAND ROVER'],
-  'RANGE ROVER':['LAND ROVER']
- };
- return map[m]||[make];
-}
+
 function modelTokens(model){
- const stop=new Set(['SEDAN','WAGON','COUPE','COUPÉ','HATCHBACK','CONVERTIBLE','CABRIO','SPORTS','UTILITY','VEHICLE','4DR','2DR','TOURING','ESTATE']);
- return normalize(model).split(' ').filter(x=>x.length>=2&&!stop.has(x)).slice(0,4);
-}
-function bodyGroup(v){
- const n=normalize(v);
- if(/STATION|WAGON|ESTATE|TOURING/.test(n))return 'WAGON';
- if(/SUV|SPORT UTILITY|OFF ROAD/.test(n))return 'SUV';
- if(/COUPE|COUPÉ/.test(n))return 'COUPE';
- if(/CABRIO|CONVERTIBLE/.test(n))return 'CABRIO';
- if(/HATCH/.test(n))return 'HATCH';
- if(/SEDAN|SALOON/.test(n))return 'SEDAN';
- if(/VAN|MPV|MINIVAN/.test(n))return 'MPV';
- return '';
-}
-function fuelGroup(v){
- const n=normalize(v);
- if(/ELECTRIC|ELEKTR/.test(n))return 'EV';
- if(/HYBRID|PHEV|PLUG/.test(n))return 'HYBRID';
- if(/DIESEL/.test(n))return 'DIESEL';
- if(/GASOLINE|PETROL|BENZINE/.test(n))return 'PETROL';
- return '';
-}
-function engineCc(vehicle){
- if(vehicle.raw && vehicle.raw.cilinderinhoud)return Number(vehicle.raw.cilinderinhoud)||0;
- if(vehicle.raw && vehicle.raw.DisplacementCC)return Number(vehicle.raw.DisplacementCC)||0;
- if(vehicle.raw && vehicle.raw.DisplacementL)return Math.round(Number(vehicle.raw.DisplacementL)*1000)||0;
- return 0;
-}
-function rowSimilarity(vehicle,row){
- let score=0;
- const vt=modelTokens(vehicle.model);
- const rt=normalize(row.handelsbenaming);
- if(vt.length){
-   const hits=vt.filter(t=>rt.includes(t)).length;
-   score+=Math.min(4,hits*1.25);
- }
- const vy=vehicle.year||0, ry=yearFromRDW(row.datum_eerste_toelating)||0;
- if(vy&&ry){
-   const d=Math.abs(vy-ry);
-   score+=d===0?2:d===1?1.2:d===2?0.5:0;
- }
- const vb=bodyGroup(vehicle.body), rb=bodyGroup(row.inrichting);
- if(vb&&rb)score+=vb===rb?1.5:-0.4;
- const ve=engineCc(vehicle), re=Number(row.cilinderinhoud||0);
- if(ve&&re){
-   const diff=Math.abs(ve-re);
-   score+=diff<=100?1.5:diff<=250?0.8:diff<=500?0.2:-0.5;
- }
- return score;
+  const stop = new Set([
+    'SEDAN','WAGON','ESTATE','TOURING','COUPE','COUPÉ',
+    'HATCHBACK','CONVERTIBLE','CABRIO','SPORTS','UTILITY',
+    'VEHICLE','4DR','2DR'
+  ]);
+
+  return normalize(model)
+    .split(' ')
+    .filter(token => token.length >= 2 && !stop.has(token))
+    .slice(0,4);
 }
 
-async function fetchSimilarNL(vehicle){
- const y=vehicle.year||new Date().getFullYear();
- const from=(y-2)+'0101',to=(y+2)+'1231';
- const makes=makeVariants(vehicle.make);
- const tokens=modelTokens(vehicle.model);
- let all=[];
-
- for(const mk of makes.slice(0,2)){
-   let where=`upper(merk)='${String(mk).replace(/'/g,"''").toUpperCase()}' AND datum_eerste_toelating between '${from}' and '${to}'`;
-   const broadTokens=tokens.slice(0,2);
-   if(broadTokens.length){
-     where+=` AND `+broadTokens.map(t=>`upper(handelsbenaming) like '%${t.replace(/'/g,"''")}%'`).join(' AND ');
-   }
-   const url='https://opendata.rdw.nl/resource/m9d7-ebf2.json?$select=kenteken,merk,handelsbenaming,datum_eerste_toelating,catalogusprijs,cilinderinhoud,inrichting&$where='+encodeURIComponent(where)+'&$limit=500';
-   try{
-     const rows=await getJSON(url);
-     all=all.concat(rows);
-   }catch(e){}
- }
- const uniq=new Map();
- all.forEach(x=>uniq.set(x.kenteken||JSON.stringify(x),x));
- const ranked=[...uniq.values()]
-   .map(r=>({row:r,sim:rowSimilarity(vehicle,r)}))
-   .filter(x=>x.sim>=2.2)
-   .sort((a,b)=>b.sim-a.sim);
- return ranked.slice(0,200);
+function bodyGroup(value){
+  const n = normalize(value);
+  if(/STATION|WAGON|ESTATE|TOURING/.test(n)) return 'WAGON';
+  if(/SUV|SPORT UTILITY|OFF ROAD/.test(n)) return 'SUV';
+  if(/COUPE|COUPÉ/.test(n)) return 'COUPE';
+  if(/CABRIO|CONVERTIBLE/.test(n)) return 'CABRIO';
+  if(/HATCH/.test(n)) return 'HATCH';
+  if(/SEDAN|SALOON/.test(n)) return 'SEDAN';
+  if(/VAN|MPV|MINIVAN/.test(n)) return 'MPV';
+  return '';
 }
 
-function matchScore(vehicle,ranked,km){
- const rows=ranked.map(x=>x.row);
- let s=3.8;
- if(ranked.length>=40)s+=2.2;
- else if(ranked.length>=15)s+=1.7;
- else if(ranked.length>=5)s+=1.0;
- else if(ranked.length>=1)s+=0.4;
-
- const avgSim=ranked.length?ranked.reduce((a,b)=>a+b.sim,0)/ranked.length:0;
- s+=Math.min(2.0,avgSim/3);
-
- const age=vehicle.year?Math.max(1,new Date().getFullYear()-vehicle.year):null;
- const kpy=age?km/age:null;
- if(kpy!==null){
-   if(kpy>=8000&&kpy<=22000)s+=1.0;
-   else if(kpy<30000)s+=0.5;
-   else if(kpy>40000)s-=0.5;
- }
- if(vehicle.make!=='Onbekend'&&vehicle.model!=='Onbekend')s+=0.5;
- return Math.max(1,Math.min(10,s));
+function vehicleEngineCC(vehicle){
+  const raw = vehicle.raw || {};
+  if(raw.cilinderinhoud) return Number(raw.cilinderinhoud) || 0;
+  if(raw.DisplacementCC) return Number(raw.DisplacementCC) || 0;
+  if(raw.DisplacementL) return Math.round(Number(raw.DisplacementL)*1000) || 0;
+  return 0;
 }
 
+function rowSimilarity(vehicle, row){
+  let points = 0;
 
-let currentVehicle=null;
+  const wantedTokens = modelTokens(vehicle.model);
+  const rowName = normalize(row.handelsbenaming);
 
-function buildPartSearchLinks(part){
- const q=String(part||'').trim();
- const box=document.getElementById('partsResults');
- box.innerHTML='';
- if(!q){box.innerHTML='<div class="note">Typ eerst een onderdeel.</div>';return}
- if(!currentVehicle){box.innerHTML='<div class="note">Analyseer eerst een auto.</div>';return}
+  if(wantedTokens.length){
+    const hits = wantedTokens.filter(token => rowName.includes(token)).length;
+    points += Math.min(4, hits * 1.25);
+  }
 
- const make=currentVehicle.make||'';
- const model=currentVehicle.model||'';
- const year=currentVehicle.year||'';
- const base=[make,model,year,q].filter(Boolean).join(' ');
- const searches=[
-   {name:'Google',desc:'Brede zoekopdracht voor onderdelen',url:'https://www.google.com/search?q='+encodeURIComponent(base)},
-   {name:'Marktplaats',desc:'Zoeken naar gebruikte en nieuwe onderdelen',url:'https://www.marktplaats.nl/q/'+encodeURIComponent(base)+'/'.replace(/%20/g,'+')},
-   {name:'eBay',desc:'Internationaal aanbod',url:'https://www.ebay.nl/sch/i.html?_nkw='+encodeURIComponent(base)},
-   {name:'Onderdelenlijn',desc:'Zoeken bij autodemontagebedrijven',url:'https://www.google.com/search?q='+encodeURIComponent('site:onderdelenlijn.nl '+base)}
- ];
- searches.forEach(x=>{
-   const a=document.createElement('a');
-   a.className='part-link';
-   a.href=x.url;
-   a.target='_blank';
-   a.rel='noopener noreferrer';
-   a.innerHTML='<div>'+x.name+'<small>'+x.desc+' • '+base+'</small></div><span>OPEN →</span>';
-   box.appendChild(a);
- });
+  const vy = vehicle.year || 0;
+  const ry = rdwYear(row.datum_eerste_toelating) || 0;
+  if(vy && ry){
+    const diff = Math.abs(vy - ry);
+    if(diff === 0) points += 2;
+    else if(diff === 1) points += 1.2;
+    else if(diff === 2) points += 0.5;
+  }
+
+  const vb = bodyGroup(vehicle.body);
+  const rb = bodyGroup(row.inrichting);
+  if(vb && rb){
+    points += vb === rb ? 1.5 : -0.4;
+  }
+
+  const ve = vehicleEngineCC(vehicle);
+  const re = Number(row.cilinderinhoud || 0);
+
+  if(ve && re){
+    const diff = Math.abs(ve - re);
+    if(diff <= 100) points += 1.5;
+    else if(diff <= 250) points += 0.8;
+    else if(diff <= 500) points += 0.2;
+    else points -= 0.5;
+  }
+
+  return points;
 }
 
-document.getElementById('partSearchBtn').addEventListener('click',()=>{
- buildPartSearchLinks(document.getElementById('partQuery').value);
+async function loadSimilarNL(vehicle){
+  const y = vehicle.year || new Date().getFullYear();
+  const from = (y-2)+'0101';
+  const to = (y+2)+'1231';
+  const makes = manufacturerVariants(vehicle.make);
+  const tokens = modelTokens(vehicle.model).slice(0,2);
+
+  let rows = [];
+
+  for(const make of makes.slice(0,2)){
+    let where =
+      "upper(merk)='"+String(make).replace(/'/g,"''").toUpperCase()+"'"+
+      " AND datum_eerste_toelating between '"+from+"' and '"+to+"'";
+
+    if(tokens.length){
+      where += ' AND ' + tokens
+        .map(token => "upper(handelsbenaming) like '%"+token.replace(/'/g,"''")+"%'")
+        .join(' AND ');
+    }
+
+    const query =
+      '$select=kenteken,merk,handelsbenaming,datum_eerste_toelating,catalogusprijs,cilinderinhoud,inrichting'+
+      '&$where='+encodeURIComponent(where)+
+      '&$limit=500';
+
+    try{
+      const found = await getJSON('https://opendata.rdw.nl/resource/m9d7-ebf2.json?'+query);
+      rows = rows.concat(found);
+    }catch(err){}
+  }
+
+  const unique = new Map();
+  rows.forEach(row => {
+    unique.set(row.kenteken || JSON.stringify(row), row);
+  });
+
+  return [...unique.values()]
+    .map(row => ({row, similarity:rowSimilarity(vehicle,row)}))
+    .filter(item => item.similarity >= 2.2)
+    .sort((a,b) => b.similarity - a.similarity)
+    .slice(0,200);
+}
+
+function calculateScore(vehicle, ranked, km){
+  let score = 3.8;
+
+  if(ranked.length >= 40) score += 2.2;
+  else if(ranked.length >= 15) score += 1.7;
+  else if(ranked.length >= 5) score += 1.0;
+  else if(ranked.length >= 1) score += 0.4;
+
+  const avgSimilarity = ranked.length
+    ? ranked.reduce((sum,item) => sum + item.similarity, 0) / ranked.length
+    : 0;
+
+  score += Math.min(2, avgSimilarity / 3);
+
+  if(vehicle.year){
+    const age = Math.max(1, new Date().getFullYear() - vehicle.year);
+    const kmPerYear = km / age;
+
+    if(kmPerYear >= 8000 && kmPerYear <= 22000) score += 1;
+    else if(kmPerYear < 30000) score += 0.5;
+    else if(kmPerYear > 40000) score -= 0.5;
+  }
+
+  if(vehicle.make !== 'Onbekend' && vehicle.model !== 'Onbekend'){
+    score += 0.5;
+  }
+
+  return Math.max(1, Math.min(10, score));
+}
+
+function renderVehicle(vehicle, subtitle){
+  $('vehicleSource').textContent = vehicle.source === 'RDW'
+    ? 'RDW voertuiggegevens'
+    : 'VIN voertuiggegevens';
+
+  $('vehicleTitle').textContent = vehicle.make+' '+vehicle.model;
+  $('vehicleSubtitle').textContent = subtitle;
+  $('vehicleYear').textContent = vehicle.yearText || 'Onbekend';
+  $('vehicleBody').textContent = vehicle.body;
+  $('vehicleFuel').textContent = vehicle.fuel;
+  $('vehicleEngine').textContent = vehicle.engine;
+  $('vehicleDrive').textContent = vehicle.drive;
+  $('vehicleTrim').textContent = vehicle.trim;
+  $('vehicleCard').hidden = false;
+}
+
+function renderComparison(vehicle, ranked){
+  const rows = ranked.map(item => item.row);
+  const catalogs = rows
+    .map(row => Number(row.catalogusprijs))
+    .filter(value => value > 0);
+
+  const avgCatalog = catalogs.length
+    ? catalogs.reduce((a,b) => a+b, 0) / catalogs.length
+    : null;
+
+  const avgSimilarity = ranked.length
+    ? ranked.reduce((sum,item) => sum + item.similarity, 0) / ranked.length
+    : 0;
+
+  $('similarCount').textContent = String(ranked.length);
+  $('avgCatalog').textContent = avgCatalog ? euro.format(avgCatalog) : 'Onbekend';
+  $('searchModel').textContent = vehicle.make+' '+vehicle.model;
+  $('matchQuality').textContent =
+    avgSimilarity >= 5 ? 'Hoog' :
+    avgSimilarity >= 3.5 ? 'Redelijk' :
+    ranked.length ? 'Laag' : 'Geen';
+
+  $('compareCard').hidden = false;
+}
+
+function renderScore(vehicle, ranked, km){
+  const score = calculateScore(vehicle, ranked, km);
+  const el = $('matchScore');
+
+  el.textContent = score.toFixed(1).replace('.',',')+' / 10';
+
+  if(score >= 7.5) el.className = 'score green';
+  else if(score >= 6) el.className = 'score orange';
+  else el.className = 'score red';
+
+  const avgSimilarity = ranked.length
+    ? ranked.reduce((sum,item) => sum + item.similarity, 0) / ranked.length
+    : 0;
+
+  $('scoreText').textContent =
+    ranked.length >= 15 && avgSimilarity >= 4
+      ? 'Sterke Nederlandse vergelijkingsbasis gevonden.'
+      : ranked.length >= 5
+      ? 'Redelijke vergelijking gevonden; actuele marktprijzen worden de volgende belangrijke stap.'
+      : 'Weinig sterke Nederlandse matches gevonden. Controleer uitvoering/model of gebruik later een marktdata-API.';
+
+  $('scoreCard').hidden = false;
+}
+
+function buildPartSearch(part){
+  const query = String(part || '').trim();
+  const box = $('partsResults');
+  box.innerHTML = '';
+
+  if(!query){
+    box.innerHTML = '<div class="note">Typ eerst een onderdeel.</div>';
+    return;
+  }
+
+  if(!currentVehicle){
+    box.innerHTML = '<div class="note">Analyseer eerst een auto.</div>';
+    return;
+  }
+
+  const base = [
+    currentVehicle.make,
+    currentVehicle.model,
+    currentVehicle.year,
+    query
+  ].filter(Boolean).join(' ');
+
+  const links = [
+    {
+      name:'Google',
+      desc:'Brede onderdelenzoekopdracht',
+      url:'https://www.google.com/search?q='+encodeURIComponent(base)
+    },
+    {
+      name:'Marktplaats',
+      desc:'Gebruikte en nieuwe onderdelen',
+      url:'https://www.marktplaats.nl/q/'+encodeURIComponent(base).replace(/%20/g,'+')+'/'
+    },
+    {
+      name:'eBay',
+      desc:'Internationaal aanbod',
+      url:'https://www.ebay.nl/sch/i.html?_nkw='+encodeURIComponent(base)
+    },
+    {
+      name:'Onderdelenlijn',
+      desc:'Autodemontagebedrijven',
+      url:'https://www.google.com/search?q='+encodeURIComponent('site:onderdelenlijn.nl '+base)
+    }
+  ];
+
+  links.forEach(link => {
+    const a = document.createElement('a');
+    a.className = 'part-link';
+    a.href = link.url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.innerHTML =
+      '<div>'+link.name+
+      '<small>'+link.desc+' • '+base+'</small></div>'+
+      '<span>OPEN →</span>';
+    box.appendChild(a);
+  });
+}
+
+$('partSearchBtn').addEventListener('click', function(){
+  buildPartSearch($('partQuery').value);
 });
-document.getElementById('partQuery').addEventListener('keydown',e=>{
- if(e.key==='Enter'){e.preventDefault();buildPartSearchLinks(e.target.value);}
+
+$('partQuery').addEventListener('keydown', function(event){
+  if(event.key === 'Enter'){
+    event.preventDefault();
+    buildPartSearch(event.target.value);
+  }
 });
 
-form.addEventListener('submit',async e=>{
- e.preventDefault();
- msg.style.display='none';
- const km=Number(document.getElementById('km').value);
- const buy=Number(document.getElementById('buy').value);
- if(!km||!buy){showMsg('Vul kilometerstand en inkoopprijs in.');return}
+$('analyzeForm').addEventListener('submit', async function(event){
+  event.preventDefault();
+  hideMessage();
 
- let vehicle;
- btn.disabled=true;btn.textContent='AUTO IDENTIFICEREN…';
+  const km = Number($('km').value);
+  const buy = Number($('buy').value);
 
- try{
-   if(mode==='plate'){
-     const plate=cleanPlate(document.getElementById('plate').value);
-     if(!plate){throw new Error('Vul een Nederlands kenteken in.')}
-     vehicle=await fetchRDWVehicle(plate);
-     document.getElementById('vehicleSource').textContent='RDW voertuiggegevens';
-     document.getElementById('subtitle').textContent=document.getElementById('plate').value.toUpperCase()+' • Nederlands kenteken';
-     document.getElementById('source1name').textContent='RDW voertuigidentificatie';
-     document.getElementById('source1desc').textContent='Nederlandse kentekenregistratie';
-     status('s1',true,'LIVE');
-   }else{
-     const vin=cleanVin(document.getElementById('vin').value);
-     const my=Number(document.getElementById('modelYear').value)||null;
-     if(vin.length!==17)throw new Error('Een volledig VIN/chassisnummer moet 17 tekens bevatten.');
-     vehicle=await fetchVINVehicle(vin,my);
-     document.getElementById('vehicleSource').textContent='VIN voertuiggegevens';
-     document.getElementById('subtitle').textContent=vin+' • buitenlands voertuig';
-     document.getElementById('source1name').textContent='NHTSA vPIC VIN-decoder';
-     document.getElementById('source1desc').textContent='VIN-identificatie op fabrikantgegevens';
-     status('s1',true,'LIVE');
-   }
+  if(!km || !buy){
+    showMessage('Vul kilometerstand en inkoopprijs in.');
+    return;
+  }
 
-   document.getElementById('title').textContent=vehicle.make+' '+vehicle.model;
-   document.getElementById('year').textContent=vehicle.yearText||'Onbekend';
-   document.getElementById('body').textContent=vehicle.body;
-   document.getElementById('fuel').textContent=vehicle.fuel;
-   document.getElementById('engine').textContent=vehicle.engine;
-   document.getElementById('drive').textContent=vehicle.drive;
-   document.getElementById('trim').textContent=vehicle.trim;
-   currentVehicle=vehicle;
-   document.getElementById('vehicleCard').hidden=false;
-   document.getElementById('partsCard').hidden=false;
-   document.getElementById('partsResults').innerHTML='';
-   document.getElementById('partQuery').value='';
+  $('analyzeBtn').disabled = true;
+  $('analyzeBtn').textContent = 'AUTO IDENTIFICEREN…';
 
-   btn.textContent='VERGELIJKEN MET NEDERLAND…';
-   const ranked=await fetchSimilarNL(vehicle);
-   const rows=ranked.map(x=>x.row);
-   status('s2',true,'LIVE');
+  try{
+    let vehicle;
+    let subtitle;
 
-   const catalogs=rows.map(x=>Number(x.catalogusprijs)).filter(x=>x>0);
-   const avg=catalogs.length?catalogs.reduce((a,b)=>a+b,0)/catalogs.length:null;
-   document.getElementById('similar').textContent=String(rows.length);
-   document.getElementById('avgCatalog').textContent=avg?euro.format(avg):'Onbekend';
-   document.getElementById('searchModel').textContent=vehicle.make+' '+vehicle.model;
-   const avgSim=ranked.length?ranked.reduce((a,b)=>a+b.sim,0)/ranked.length:0;
-   document.getElementById('matchQuality').textContent=avgSim>=5?'Hoog':avgSim>=3.5?'Redelijk':ranked.length?'Laag':'Geen';
-   document.getElementById('compareCard').hidden=false;
+    if(mode === 'plate'){
+      const plate = cleanPlate($('plate').value);
 
-   const sc=matchScore(vehicle,ranked,km);
-   const scoreEl=document.getElementById('vehicleScore');
-   scoreEl.textContent=sc.toFixed(1).replace('.',',')+' / 10';
-   scoreEl.className='score '+(sc>=7.5?'green':sc>=6?'orange':'red');
-   const avgSim=ranked.length?ranked.reduce((a,b)=>a+b.sim,0)/ranked.length:0;
-   document.getElementById('scoreText').textContent=
-     ranked.length>=15 && avgSim>=4
-       ?'Sterke Nederlandse match: model, bouwjaar en technische kenmerken sluiten goed aan.'
-       : ranked.length>=5
-       ?'Redelijke Nederlandse match. Voor een echte inkoopbeslissing blijven actuele advertentieprijzen belangrijk.'
-       :'Weinig sterke Nederlandse matches gevonden; controleer model/uitvoering of gebruik later een marktdata-API.';
-   document.getElementById('scoreCard').hidden=false;
-   document.getElementById('sourcesCard').hidden=false;
+      if(!plate){
+        throw new Error('Vul een Nederlands kenteken in.');
+      }
 
-   document.getElementById('vehicleCard').scrollIntoView({behavior:'smooth',block:'start'});
- }catch(err){
-   showMsg(err.message||'Er ging iets mis tijdens de analyse.');
- }finally{
-   btn.disabled=false;btn.textContent='ANALYSEER AUTO';
- }
+      vehicle = await loadRDWVehicle(plate);
+      subtitle = $('plate').value.toUpperCase()+' • Nederlands kenteken';
+
+      $('source1Name').textContent = 'RDW voertuigidentificatie';
+      $('source1Desc').textContent = 'Nederlandse kentekenregistratie';
+      setStatus('source1Status', true, 'LIVE');
+    }else{
+      const vin = cleanVin($('vin').value);
+      const modelYear = Number($('modelYear').value) || null;
+
+      if(vin.length !== 17){
+        throw new Error('Een volledig VIN/chassisnummer moet 17 tekens bevatten.');
+      }
+
+      vehicle = await loadVINVehicle(vin, modelYear);
+      subtitle = vin+' • buitenlands voertuig';
+
+      $('source1Name').textContent = 'NHTSA vPIC VIN-decoder';
+      $('source1Desc').textContent = 'VIN-identificatie op fabrikantgegevens';
+      setStatus('source1Status', true, 'LIVE');
+    }
+
+    currentVehicle = vehicle;
+    renderVehicle(vehicle, subtitle);
+
+    $('partsCard').hidden = false;
+    $('partsResults').innerHTML = '';
+    $('partQuery').value = '';
+
+    $('analyzeBtn').textContent = 'VERGELIJKEN MET NEDERLAND…';
+
+    const ranked = await loadSimilarNL(vehicle);
+    setStatus('source2Status', true, 'LIVE');
+
+    renderComparison(vehicle, ranked);
+    renderScore(vehicle, ranked, km);
+
+    $('sourcesCard').hidden = false;
+    $('vehicleCard').scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(error){
+    showMessage(error.message || 'Er ging iets mis tijdens de analyse.');
+  }finally{
+    $('analyzeBtn').disabled = false;
+    $('analyzeBtn').textContent = 'ANALYSEER AUTO';
+  }
 });
+
+setMode('plate');
 })();
 </script>
 </body>
