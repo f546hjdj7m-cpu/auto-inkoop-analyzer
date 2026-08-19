@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Auto Inkoop Analyzer V2.1</title>
+<title>Auto Inkoop Analyzer V2.2</title>
 <style>
 :root{
   --copper:#b87333;--copper-dark:#8f5528;--copper-soft:#f7eee7;
@@ -56,7 +56,7 @@ input:focus{outline:2px solid #efd9c7;border-color:var(--copper)}
 <body>
 <div class="wrap">
 <h1>Auto Inkoop Analyzer</h1>
-<p class="muted">V2.1 — VehiCode VIN-backend + exacte onderdelenzoeker.</p>
+<p class="muted">V2.2 — dubbele VIN-controle + conflictbeveiliging + exacte onderdelenzoeker.</p>
 
 <div class="card">
 <h2>Analyseer een auto</h2>
@@ -91,7 +91,7 @@ input:focus{outline:2px solid #efd9c7;border-color:var(--copper)}
 <div id="manualCard" class="card" hidden>
 <div class="eyebrow">VIN aanvullen</div>
 <h2>Ontbrekende voertuiggegevens aanvullen</h2>
-<p class="muted">Dit blok blijft beschikbaar bij VIN, zodat je altijd kunt corrigeren of aanvullen.</p>
+<p class="muted">Dit blok blijft beschikbaar bij VIN, zodat je altijd kunt corrigeren of aanvullen.</p><div id="vinConflictWarning" class="message"></div>
 <div class="grid">
 <div><label for="mMake">Merk</label><input id="mMake" placeholder="BMW"></div>
 <div><label for="mModel">Model / variant</label><input id="mModel" placeholder="330e"></div>
@@ -225,77 +225,134 @@ async function loadRDWVehicle(plate){
 }
 
 async function loadVINVehicle(vin,modelYear){
-  // 1) Eerst onze eigen Netlify backend -> VehiCode
-  try{
-    const r=await fetch('/.netlify/functions/decode-vin',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({vin:vin})
-    });
+  async function getVehiCode(){
+    try{
+      const r=await fetch('/.netlify/functions/decode-vin',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({vin})
+      });
+      if(!r.ok)return null;
 
-    if(r.ok){
       const data=await r.json();
       const report=data.report||data;
-      if(report && (report.manufacturer || report.model)){
-        const kw=Number(report.powerKw||0);
-        const hp=kw?Math.round(kw*1.34102):0;
+      if(!report || (!report.manufacturer && !report.model))return null;
 
-        return{
-          source:'VehiCode',
-          make:safe(report.manufacturer),
-          model:safe(report.model),
-          year:Number(report.modelYear||modelYear||0)||null,
-          yearText:safe(report.modelYear||modelYear),
-          body:safe(report.bodyStyle),
-          fuel:safe(report.fuelType),
-          engine:report.displacementCc
-            ? Number(report.displacementCc).toLocaleString('nl-NL')+' cc'
-            : safe(report.engine),
-          engineCC:Number(report.displacementCc||0),
-          power:hp?hp+' pk':(report.powerKw?report.powerKw+' kW':'Onbekend'),
-          powerHP:hp,
-          transmission:safe(report.transmission),
-          drive:safe(report.driveType),
-          trim:safe(report.trim),
-          generation:safe(report.generation||report.modelCode),
-          oem:'',
-          raw:report
-        };
-      }
+      const kw=Number(report.powerKw||0);
+      const hp=kw?Math.round(kw*1.34102):0;
+
+      return{
+        source:'VehiCode',
+        make:safe(report.manufacturer),
+        model:safe(report.model),
+        year:Number(report.modelYear||modelYear||0)||null,
+        yearText:safe(report.modelYear||modelYear),
+        body:safe(report.bodyStyle),
+        fuel:safe(report.fuelType),
+        engine:report.displacementCc
+          ? Number(report.displacementCc).toLocaleString('nl-NL')+' cc'
+          : safe(report.engine),
+        engineCC:Number(report.displacementCc||0),
+        power:hp?hp+' pk':(report.powerKw?report.powerKw+' kW':'Onbekend'),
+        powerHP:hp,
+        transmission:safe(report.transmission),
+        drive:safe(report.driveType),
+        trim:safe(report.trim),
+        generation:safe(report.generation||report.modelCode),
+        oem:'',
+        raw:report
+      };
+    }catch(e){
+      return null;
     }
-  }catch(e){
-    // Stil terugvallen op vPIC
   }
 
-  // 2) Gratis fallback: NHTSA vPIC
-  let url='https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValuesExtended/'+encodeURIComponent(vin)+'?format=json';
-  if(modelYear)url+='&modelyear='+encodeURIComponent(modelYear);
-  const data=await getJSON(url);
-  if(!data.Results||!data.Results.length)throw new Error('VIN kon niet worden gedecodeerd.');
-  const v=data.Results[0];
+  async function getVPIC(){
+    try{
+      let url='https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValuesExtended/'+encodeURIComponent(vin)+'?format=json';
+      if(modelYear)url+='&modelyear='+encodeURIComponent(modelYear);
 
-  const kw=Number(v.EngineKW||0);
-  const hp=kw?Math.round(kw*1.34102):0;
+      const data=await getJSON(url);
+      if(!data.Results||!data.Results.length)return null;
 
-  return{
-    source:'vPIC fallback',
-    make:safe(v.Make),
-    model:safe(v.Model),
-    year:Number(v.ModelYear||modelYear||0)||null,
-    yearText:safe(v.ModelYear||modelYear),
-    body:safe(v.BodyClass),
-    fuel:safe(v.FuelTypePrimary),
-    engine:v.DisplacementL?safe(v.DisplacementL)+' L':safe(v.EngineModel),
-    engineCC:Number(v.DisplacementCC||0)||Math.round(Number(v.DisplacementL||0)*1000)||0,
-    power:hp?hp+' pk':'Onbekend',
-    powerHP:hp,
-    transmission:safe(v.TransmissionStyle),
-    drive:safe(v.DriveType),
-    trim:[v.Series,v.Trim].filter(Boolean).join(' • ')||'Onbekend',
-    generation:[v.Series,v.Series2].filter(Boolean).join(' ')||'',
+      const v=data.Results[0];
+      const kw=Number(v.EngineKW||0);
+      const hp=kw?Math.round(kw*1.34102):0;
+
+      return{
+        source:'vPIC',
+        make:safe(v.Make),
+        model:safe(v.Model),
+        year:Number(v.ModelYear||modelYear||0)||null,
+        yearText:safe(v.ModelYear||modelYear),
+        body:safe(v.BodyClass),
+        fuel:safe(v.FuelTypePrimary),
+        engine:v.DisplacementL?safe(v.DisplacementL)+' L':safe(v.EngineModel),
+        engineCC:Number(v.DisplacementCC||0)||Math.round(Number(v.DisplacementL||0)*1000)||0,
+        power:hp?hp+' pk':'Onbekend',
+        powerHP:hp,
+        transmission:safe(v.TransmissionStyle),
+        drive:safe(v.DriveType),
+        trim:[v.Series,v.Trim].filter(Boolean).join(' • ')||'Onbekend',
+        generation:[v.Series,v.Series2].filter(Boolean).join(' ')||'',
+        oem:'',
+        raw:v
+      };
+    }catch(e){
+      return null;
+    }
+  }
+
+  const [vc,vp]=await Promise.all([getVehiCode(),getVPIC()]);
+
+  if(!vc && !vp)throw new Error('VIN kon niet worden gedecodeerd.');
+  if(!vc)return {...vp,source:'vPIC (VehiCode niet beschikbaar)',vinConflict:false,conflictText:''};
+  if(!vp)return {...vc,source:'VehiCode (geen tweede controle)',vinConflict:false,conflictText:''};
+
+  const canonical=x=>normalize(x)
+    .replace(/\bMERCEDES BENZ\b/g,'MERCEDES')
+    .replace(/\bMERCEDES-BENZ\b/g,'MERCEDES');
+
+  const known=x=>x && x!=='Onbekend';
+  const same=(a,b)=>known(a)&&known(b)&&canonical(a)===canonical(b);
+
+  const makeConflict=known(vc.make)&&known(vp.make)&&!same(vc.make,vp.make);
+  const modelConflict=known(vc.model)&&known(vp.model)&&!same(vc.model,vp.model);
+
+  const merged={
+    source:(makeConflict||modelConflict)
+      ? 'VIN bronnen verschillen — controle nodig'
+      : 'VehiCode + vPIC gecontroleerd',
+
+    make:same(vc.make,vp.make)
+      ? vc.make
+      : (known(vp.make)?vp.make:vc.make),
+
+    model:modelConflict
+      ? 'Onbekend'
+      : (known(vc.model)?vc.model:vp.model),
+
+    year:vc.year||vp.year||null,
+    yearText:known(vc.yearText)?vc.yearText:vp.yearText,
+    body:known(vc.body)?vc.body:vp.body,
+    fuel:known(vc.fuel)?vc.fuel:vp.fuel,
+    engine:known(vc.engine)?vc.engine:vp.engine,
+    engineCC:vc.engineCC||vp.engineCC||0,
+    power:known(vc.power)?vc.power:vp.power,
+    powerHP:vc.powerHP||vp.powerHP||0,
+    transmission:known(vc.transmission)?vc.transmission:vp.transmission,
+    drive:known(vc.drive)?vc.drive:vp.drive,
+    trim:modelConflict ? 'Onbekend' : (known(vc.trim)?vc.trim:vp.trim),
+    generation:modelConflict ? '' : (known(vc.generation)?vc.generation:vp.generation),
     oem:'',
-    raw:v
+    vinConflict:makeConflict||modelConflict,
+    conflictText:(makeConflict||modelConflict)
+      ? 'VehiCode: '+vc.make+' '+vc.model+' | vPIC: '+vp.make+' '+vp.model
+      : '',
+    raw:{vehicode:vc.raw,vpic:vp.raw}
   };
+
+  return merged;
 }
 
 function prefillManual(v){
@@ -550,6 +607,9 @@ $('applyManualBtn').addEventListener('click',async()=>{
   try{
     $('applyManualBtn').disabled=true;
     const v=mergeManual(pendingVehicle);
+    const warning=$('vinConflictWarning');
+    warning.style.display='none';
+    warning.textContent='';
     await runComparison(v,currentSubtitle);
   }catch(e){showMessage(e.message||'Vergelijking mislukt.')}
   finally{$('applyManualBtn').disabled=false}
@@ -578,11 +638,31 @@ $('analyzeForm').addEventListener('submit',async e=>{
       currentSubtitle=vin+' • buitenlands voertuig';
       prefillManual(v);
       $('manualCard').hidden=false;
+
+      const warning=$('vinConflictWarning');
+      if(v.vinConflict){
+        warning.style.display='block';
+        warning.innerHTML=
+          '<b>VIN-identiteit onzeker.</b><br>'+
+          v.conflictText+
+          '<br><br>Controleer hieronder vooral <b>Model / variant</b> en <b>Modelcode / generatie</b>. '+
+          'Druk daarna op <b>GEBRUIK DEZE GEGEVENS</b>.';
+      }else{
+        warning.style.display='none';
+        warning.textContent='';
+      }
+
       currentVehicle=v;
       renderVehicle(v,currentSubtitle);
       $('partsCard').hidden=false;
       $('partsResults').innerHTML='';
-      await runComparison(v,currentSubtitle);
+
+      if(v.vinConflict){
+        $('compareCard').hidden=true;
+        $('scoreCard').hidden=true;
+      }else{
+        await runComparison(v,currentSubtitle);
+      }
     }
   }catch(err){showMessage(err.message||'Er ging iets mis tijdens de analyse.')}
   finally{$('analyzeBtn').disabled=false;$('analyzeBtn').textContent='ANALYSEER AUTO'}
