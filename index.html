@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Auto Inkoop Analyzer V1.9</title>
+<title>Auto Inkoop Analyzer V2.1</title>
 <style>
 :root{
   --copper:#b87333;--copper-dark:#8f5528;--copper-soft:#f7eee7;
@@ -56,7 +56,7 @@ input:focus{outline:2px solid #efd9c7;border-color:var(--copper)}
 <body>
 <div class="wrap">
 <h1>Auto Inkoop Analyzer</h1>
-<p class="muted">V1.9 — stabiele VIN-route + uitgebreide meertalige onderdelenzoeker.</p>
+<p class="muted">V2.1 — VehiCode VIN-backend + exacte onderdelenzoeker.</p>
 
 <div class="card">
 <h2>Analyseer een auto</h2>
@@ -102,6 +102,8 @@ input:focus{outline:2px solid #efd9c7;border-color:var(--copper)}
 <div><label for="mPower">Vermogen pk</label><input id="mPower" type="number" inputmode="numeric" placeholder="292"></div>
 <div><label for="mTransmission">Transmissie</label><input id="mTransmission" placeholder="Automaat"></div>
 <div><label for="mDrive">Aandrijving</label><input id="mDrive" placeholder="RWD / AWD / FWD"></div>
+<div><label for="mGeneration">Modelcode / generatie</label><input id="mGeneration" placeholder="Bijv. G21 / W206 / 8Y"></div>
+<div><label for="mOEM">OEM / onderdeelnummer (optioneel)</label><input id="mOEM" placeholder="Bijv. 63119852047"></div>
 </div>
 <button id="applyManualBtn" class="secondary" type="button">GEBRUIK DEZE GEGEVENS</button>
 </div>
@@ -119,6 +121,7 @@ input:focus{outline:2px solid #efd9c7;border-color:var(--copper)}
 <div class="vehicle-item">Transmissie<b id="vehicleTransmission">—</b></div>
 <div class="vehicle-item">Aandrijving<b id="vehicleDrive">—</b></div>
 <div class="vehicle-item">Uitvoering / serie<b id="vehicleTrim">—</b></div>
+<div class="vehicle-item">Modelcode / generatie<b id="vehicleGeneration">—</b></div>
 </div>
 </div>
 
@@ -130,7 +133,7 @@ input:focus{outline:2px solid #efd9c7;border-color:var(--copper)}
 <input id="partQuery" type="search" placeholder="Bijv. koplamp">
 <button id="partSearchBtn" type="button">ZOEK</button>
 </div>
-<div class="note">De zoekopdracht gebruikt automatisch merk, model, bouwjaar, uitvoering, carrosserie, motor, vermogen, transmissie en aandrijving waar beschikbaar. Voor echte prijs- en voorraadvergelijking in één lijst is de geplande backend nodig.</div>
+<div class="note">De onderdelenzoeker gebruikt nu juist een korte, exacte identiteit: merk + model + generatie/modelcode + onderdeel. Bouwjaar en carrosserie worden alleen als fallback gebruikt. Als je een OEM-nummer invult, krijgt dat altijd voorrang.</div>
 <div id="partsResults" class="parts-results"></div>
 </div>
 
@@ -215,11 +218,56 @@ async function loadRDWVehicle(plate){
     transmission:'Onbekend',
     drive:'Onbekend',
     trim:safe(v.handelsbenaming),
+    generation:'',
+    oem:'',
     raw:v
   };
 }
 
 async function loadVINVehicle(vin,modelYear){
+  // 1) Eerst onze eigen Netlify backend -> VehiCode
+  try{
+    const r=await fetch('/.netlify/functions/decode-vin',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({vin:vin})
+    });
+
+    if(r.ok){
+      const data=await r.json();
+      const report=data.report||data;
+      if(report && (report.manufacturer || report.model)){
+        const kw=Number(report.powerKw||0);
+        const hp=kw?Math.round(kw*1.34102):0;
+
+        return{
+          source:'VehiCode',
+          make:safe(report.manufacturer),
+          model:safe(report.model),
+          year:Number(report.modelYear||modelYear||0)||null,
+          yearText:safe(report.modelYear||modelYear),
+          body:safe(report.bodyStyle),
+          fuel:safe(report.fuelType),
+          engine:report.displacementCc
+            ? Number(report.displacementCc).toLocaleString('nl-NL')+' cc'
+            : safe(report.engine),
+          engineCC:Number(report.displacementCc||0),
+          power:hp?hp+' pk':(report.powerKw?report.powerKw+' kW':'Onbekend'),
+          powerHP:hp,
+          transmission:safe(report.transmission),
+          drive:safe(report.driveType),
+          trim:safe(report.trim),
+          generation:safe(report.generation||report.modelCode),
+          oem:'',
+          raw:report
+        };
+      }
+    }
+  }catch(e){
+    // Stil terugvallen op vPIC
+  }
+
+  // 2) Gratis fallback: NHTSA vPIC
   let url='https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValuesExtended/'+encodeURIComponent(vin)+'?format=json';
   if(modelYear)url+='&modelyear='+encodeURIComponent(modelYear);
   const data=await getJSON(url);
@@ -228,13 +276,11 @@ async function loadVINVehicle(vin,modelYear){
 
   const kw=Number(v.EngineKW||0);
   const hp=kw?Math.round(kw*1.34102):0;
-  const make=safe(v.Make);
-  const model=safe(v.Model);
 
   return{
-    source:'VIN',
-    make,
-    model,
+    source:'vPIC fallback',
+    make:safe(v.Make),
+    model:safe(v.Model),
     year:Number(v.ModelYear||modelYear||0)||null,
     yearText:safe(v.ModelYear||modelYear),
     body:safe(v.BodyClass),
@@ -246,6 +292,8 @@ async function loadVINVehicle(vin,modelYear){
     transmission:safe(v.TransmissionStyle),
     drive:safe(v.DriveType),
     trim:[v.Series,v.Trim].filter(Boolean).join(' • ')||'Onbekend',
+    generation:[v.Series,v.Series2].filter(Boolean).join(' ')||'',
+    oem:'',
     raw:v
   };
 }
@@ -260,6 +308,8 @@ function prefillManual(v){
   $('mPower').value=v.powerHP||'';
   $('mTransmission').value=unknown(v.transmission)?'':v.transmission;
   $('mDrive').value=unknown(v.drive)?'':v.drive;
+  $('mGeneration').value=v.generation||'';
+  $('mOEM').value=v.oem||'';
 }
 
 function mergeManual(v){
@@ -273,6 +323,8 @@ function mergeManual(v){
   if(Number($('mPower').value)){out.powerHP=Number($('mPower').value);out.power=Number($('mPower').value)+' pk'}
   if($('mTransmission').value.trim())out.transmission=$('mTransmission').value.trim();
   if($('mDrive').value.trim())out.drive=$('mDrive').value.trim();
+  if($('mGeneration').value.trim())out.generation=$('mGeneration').value.trim();
+  if($('mOEM').value.trim())out.oem=$('mOEM').value.trim();
   out.source='VIN + aangevuld';
   return out;
 }
@@ -360,6 +412,7 @@ function renderVehicle(v,subtitle){
   $('vehicleTransmission').textContent=v.transmission;
   $('vehicleDrive').textContent=v.drive;
   $('vehicleTrim').textContent=v.trim;
+  $('vehicleGeneration').textContent=v.generation||'Onbekend';
   $('vehicleCard').hidden=false;
 }
 
@@ -413,45 +466,82 @@ const translations={
 };
 
 function buildPartSearch(part){
-  const q=String(part||'').trim(),box=$('partsResults');box.innerHTML='';
-  if(!q){box.innerHTML='<div class="note">Typ eerst een onderdeel.</div>';return}
-  if(!currentVehicle){box.innerHTML='<div class="note">Analyseer eerst een auto.</div>';return}
+  const q=String(part||'').trim();
+  const box=$('partsResults');
+  box.innerHTML='';
+
+  if(!q){
+    box.innerHTML='<div class="note">Typ eerst een onderdeel.</div>';
+    return;
+  }
+  if(!currentVehicle){
+    box.innerHTML='<div class="note">Analyseer eerst een auto.</div>';
+    return;
+  }
 
   const t=translations[q.toLowerCase()]||{de:q,en:q,fr:q,it:q,pl:q,es:q};
-  const identity=[
-    currentVehicle.make,
-    currentVehicle.model,
-    currentVehicle.year,
-    currentVehicle.trim,
-    currentVehicle.body,
-    currentVehicle.engineCC ? currentVehicle.engineCC+'cc' : '',
-    currentVehicle.powerHP ? currentVehicle.powerHP+'hp' : '',
-    currentVehicle.transmission,
-    currentVehicle.drive
-  ].filter(x=>x && x!=='Onbekend').join(' ');
-  const searches=[
-    {name:'Google Europa',desc:'NL + DE + EN gecombineerd',url:'https://www.google.com/search?q='+encodeURIComponent(identity+' '+q+' OR '+t.de+' OR '+t.en)},
-    {name:'eBay Duitsland',desc:'Duits Europees aanbod',url:'https://www.ebay.de/sch/i.html?_nkw='+encodeURIComponent(identity+' '+t.de)},
-    {name:'eBay Nederland',desc:'Nederlands/internationaal',url:'https://www.ebay.nl/sch/i.html?_nkw='+encodeURIComponent(identity+' '+q)},
-    {name:'Marktplaats',desc:'Nederland',url:'https://www.marktplaats.nl/q/'+encodeURIComponent(identity+' '+q).replace(/%20/g,'+')+'/'},
-    {name:'Ovoko',desc:'Europese gebruikte onderdelen',url:'https://www.google.com/search?q='+encodeURIComponent('site:ovoko.com '+identity+' '+t.en)},
-    {name:'B-Parts',desc:'Originele gebruikte onderdelen Europa',url:'https://www.google.com/search?q='+encodeURIComponent('site:b-parts.com '+identity+' '+t.en)},
-    {name:'Onderdelenlijn',desc:'Nederlandse demontagebedrijven',url:'https://www.google.com/search?q='+encodeURIComponent('site:onderdelenlijn.nl '+identity+' '+q)},
-    {name:'Allegro Polen',desc:'Pools aanbod',url:'https://allegro.pl/listing?string='+encodeURIComponent(identity+' '+t.pl)},
-    {name:'Kleinanzeigen Duitsland',desc:'Duits particulier/handel aanbod',url:'https://www.google.com/search?q='+encodeURIComponent('site:kleinanzeigen.de '+identity+' '+t.de)},
-    {name:'AUTODOC',desc:'Nieuwe aftermarket onderdelen',url:'https://www.google.com/search?q='+encodeURIComponent('site:autodoc.eu OR site:autodoc.de '+identity+' '+t.de+' '+t.en)},
-    {name:'Global Parts Search',desc:'Zoek wereldwijd in meerdere talen',url:'https://www.google.com/search?q='+encodeURIComponent('"'+identity+'" '+q+' OR '+t.de+' OR '+t.en+' OR '+t.fr+' OR '+t.it+' OR '+t.pl)}
-  ];
+
+  const make=currentVehicle.make&&currentVehicle.make!=='Onbekend'?currentVehicle.make:'';
+  const model=currentVehicle.model&&currentVehicle.model!=='Onbekend'?currentVehicle.model:'';
+  const year=currentVehicle.year||'';
+  const generation=currentVehicle.generation||'';
+  const body=currentVehicle.body&&currentVehicle.body!=='Onbekend'?currentVehicle.body:'';
+  const trim=currentVehicle.trim&&currentVehicle.trim!=='Onbekend'?currentVehicle.trim:'';
+  const oem=currentVehicle.oem||'';
+
+  // Belangrijk: onderdeelzoekopdrachten kort en exact houden.
+  // Extra technische data zoals pk/transmissie wordt NIET standaard toegevoegd,
+  // omdat dat zoekmachines juist kan afleiden van het juiste onderdeel.
+  const exactIdentity=[make,model,generation].filter(Boolean).join(' ').trim();
+  const fallbackIdentity=[make,model,year,body].filter(Boolean).join(' ').trim();
+  const exactNL=[exactIdentity,q].filter(Boolean).join(' ');
+  const exactDE=[exactIdentity,t.de].filter(Boolean).join(' ');
+  const exactEN=[exactIdentity,t.en].filter(Boolean).join(' ');
+
+  const oemQuery=oem ? [make,model,oem].filter(Boolean).join(' ') : '';
+
+  const searches=[];
+
+  if(oemQuery){
+    searches.push(
+      {name:'OEM exact zoeken',desc:'Hoogste kans op exact passend onderdeel',url:'https://www.google.com/search?q='+encodeURIComponent('"'+oem+'" '+make+' '+model)},
+      {name:'eBay OEM',desc:'Zoekt rechtstreeks op onderdeelnummer',url:'https://www.ebay.de/sch/i.html?_nkw='+encodeURIComponent(oemQuery)}
+    );
+  }
+
+  searches.push(
+    {name:'Google Exact',desc:'Exact model + onderdeel',url:'https://www.google.com/search?q='+encodeURIComponent('"'+exactIdentity+'" "'+q+'"')},
+    {name:'eBay Duitsland',desc:'Exact model + Duitse onderdeelnaam',url:'https://www.ebay.de/sch/i.html?_nkw='+encodeURIComponent(exactDE)},
+    {name:'eBay Nederland',desc:'Exact model + Nederlandse onderdeelnaam',url:'https://www.ebay.nl/sch/i.html?_nkw='+encodeURIComponent(exactNL)},
+    {name:'Marktplaats',desc:'Exact model + onderdeel',url:'https://www.marktplaats.nl/q/'+encodeURIComponent(exactNL).replace(/%20/g,'+')+'/'},
+    {name:'Kleinanzeigen Duitsland',desc:'Exact model + Duitse onderdeelnaam',url:'https://www.google.com/search?q='+encodeURIComponent('site:kleinanzeigen.de "'+exactIdentity+'" "'+t.de+'"')},
+    {name:'Ovoko',desc:'Gebruikte onderdelen voor exact model',url:'https://www.google.com/search?q='+encodeURIComponent('site:ovoko.com OR site:ovoko.de "'+exactIdentity+'" "'+t.en+'"')},
+    {name:'B-Parts',desc:'Originele gebruikte onderdelen',url:'https://www.google.com/search?q='+encodeURIComponent('site:b-parts.com "'+exactIdentity+'" "'+t.en+'"')},
+    {name:'Onderdelenlijn',desc:'Nederlandse demontagebedrijven',url:'https://www.google.com/search?q='+encodeURIComponent('site:onderdelenlijn.nl "'+exactIdentity+'" "'+q+'"')},
+    {name:'AUTODOC',desc:'Nieuwe aftermarket onderdelen',url:'https://www.google.com/search?q='+encodeURIComponent('site:autodoc.eu OR site:autodoc.de "'+exactIdentity+'" "'+t.de+'"')},
+    {name:'Allegro Polen',desc:'Pools onderdelenaanbod',url:'https://allegro.pl/listing?string='+encodeURIComponent([exactIdentity,t.pl].filter(Boolean).join(' '))},
+    {name:'Brede fallback',desc:'Bouwjaar/carrosserie erbij als exacte zoekterm weinig vindt',url:'https://www.google.com/search?q='+encodeURIComponent('"'+fallbackIdentity+'" "'+q+'"')}
+  );
+
+  const header=document.createElement('div');
+  header.className='note';
+  header.innerHTML=
+    '<b>Exacte zoekidentiteit:</b> '+(exactIdentity||fallbackIdentity)+
+    '<br><b>Onderdeel:</b> '+q+
+    (generation?'<br><b>Generatie:</b> '+generation:'')+
+    (oem?'<br><b>OEM:</b> '+oem:'');
+  box.appendChild(header);
 
   searches.forEach(l=>{
     const a=document.createElement('a');
     a.className='part-link';
-    a.href=l.url;a.target='_blank';a.rel='noopener noreferrer';
-    a.innerHTML='<div>'+l.name+'<small>'+l.desc+' • '+identity+' • '+q+'</small></div><span>OPEN →</span>';
+    a.href=l.url;
+    a.target='_blank';
+    a.rel='noopener noreferrer';
+    a.innerHTML='<div>'+l.name+'<small>'+l.desc+'</small></div><span>OPEN →</span>';
     box.appendChild(a);
   });
 }
-
 $('partSearchBtn').addEventListener('click',()=>buildPartSearch($('partQuery').value));
 $('partQuery').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();buildPartSearch(e.target.value)}});
 
